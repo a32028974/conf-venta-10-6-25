@@ -1,0 +1,52 @@
+
+body {
+  font-family: Arial, sans-serif;
+  background: #f2f2f2;
+  margin: 0;
+  padding: 20px;
+}
+.container {
+  max-width: 1200px;
+  margin: auto;
+}
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+input[type="text"] {
+  padding: 8px;
+  width: 250px;
+  margin-top: 5px;
+}
+button {
+  padding: 10px 15px;
+  margin-top: 20px;
+  cursor: pointer;
+}
+.tabla {
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 10px;
+  overflow-x: auto;
+  margin-bottom: 20px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: center;
+}
+.acciones {
+  text-align: right;
+}
+.acciones-venta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
