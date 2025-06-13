@@ -78,7 +78,7 @@ async function registrarVenta() {
   }
 
   if (exitos > 0) {
-    alert(`Se registraron ${exitos} venta(s) correctamente.`);
+    mostrarMensaje(`Se registraron ${exitos} venta(s) correctamente.`);
     buscarArticulo(); // Recarga la tabla
     document.getElementById('vendedor').value = '';
   } else {
@@ -101,10 +101,21 @@ async function eliminarVenta() {
   }
 
   if (eliminados > 0) {
-    alert(`Se eliminaron ${eliminados} venta(s) correctamente.`);
+    mostrarMensaje(`Se eliminaron ${eliminados} venta(s) correctamente.`, "#dc3545"); // rojo
     buscarArticulo();
     document.getElementById('vendedor').value = '';
   } else {
     alert("Error al eliminar las ventas.");
   }
+  function mostrarMensaje(texto, color = "#28a745") {
+  const div = document.getElementById("mensaje-flotante");
+  div.innerText = texto;
+  div.style.backgroundColor = color;
+  div.style.display = "block";
+  
+  setTimeout(() => {
+    div.style.display = "none";
+  }, 2000);
+}
+
 }
