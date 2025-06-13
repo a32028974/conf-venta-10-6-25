@@ -18,10 +18,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-
 async function buscarArticulo() {
   const codigo = document.getElementById('codigo').value.trim();
-  if (!codigo) return alert("Ingresá un código.");
+  if (!codigo) {
+    mostrarMensaje("Ingresá un código.", "#dc3545");
+    return;
+  }
 
   const response = await fetch(`${URL}?codigo=${codigo}`);
   const data = await response.json();
@@ -30,7 +32,7 @@ async function buscarArticulo() {
 
 function mostrarResultados(data) {
   const contenedor = document.getElementById('resultados');
-  filasSeleccionadas = []; // Reiniciar selección
+  filasSeleccionadas = [];
 
   if (data.length === 0) {
     contenedor.innerHTML = "<p>No se encontraron resultados.</p>";
@@ -66,8 +68,14 @@ function toggleSeleccion(checkbox) {
 
 async function registrarVenta() {
   const vendedor = document.getElementById('vendedor').value.trim();
-  if (!vendedor) return alert("Ingresá el nombre del vendedor.");
-  if (filasSeleccionadas.length === 0) return alert("Seleccioná al menos un artículo.");
+  if (!vendedor) {
+    mostrarMensaje("Ingresá el nombre del vendedor.", "#dc3545");
+    return;
+  }
+  if (filasSeleccionadas.length === 0) {
+    mostrarMensaje("Seleccioná al menos un artículo.", "#dc3545");
+    return;
+  }
 
   let exitos = 0;
 
@@ -79,15 +87,18 @@ async function registrarVenta() {
 
   if (exitos > 0) {
     mostrarMensaje(`Se registraron ${exitos} venta(s) correctamente.`);
-    buscarArticulo(); // Recarga la tabla
+    buscarArticulo();
     document.getElementById('vendedor').value = '';
   } else {
-    alert("Hubo un error al registrar las ventas.");
+    mostrarMensaje("Hubo un error al registrar las ventas.", "#dc3545");
   }
 }
 
 async function eliminarVenta() {
-  if (filasSeleccionadas.length === 0) return alert("Seleccioná al menos un artículo para eliminar la venta.");
+  if (filasSeleccionadas.length === 0) {
+    mostrarMensaje("Seleccioná al menos un artículo para eliminar.", "#dc3545");
+    return;
+  }
 
   const confirmar = confirm(`¿Estás seguro de que querés eliminar ${filasSeleccionadas.length} venta(s)?`);
   if (!confirmar) return;
@@ -101,21 +112,21 @@ async function eliminarVenta() {
   }
 
   if (eliminados > 0) {
-    mostrarMensaje(`Se eliminaron ${eliminados} venta(s) correctamente.`, "#dc3545"); // rojo
+    mostrarMensaje(`Se eliminaron ${eliminados} venta(s) correctamente.`, "#ffc107");
     buscarArticulo();
     document.getElementById('vendedor').value = '';
   } else {
-    alert("Error al eliminar las ventas.");
+    mostrarMensaje("Error al eliminar las ventas.", "#dc3545");
   }
-  function mostrarMensaje(texto, color = "#28a745") {
+}
+
+function mostrarMensaje(texto, color = "#28a745") {
   const div = document.getElementById("mensaje-flotante");
   div.innerText = texto;
   div.style.backgroundColor = color;
   div.style.display = "block";
-  
+
   setTimeout(() => {
     div.style.display = "none";
   }, 2000);
-}
-
 }
