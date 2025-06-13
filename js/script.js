@@ -1,4 +1,3 @@
-
 const URL = 'https://script.google.com/macros/s/AKfycbxT6imc7LuSZUFIyPNXOrgnXoyLQzytzr-thNI4cylyg1s8Ms19dT2xv-okCCbdsZLWoA/exec';
 let filaSeleccionada = null;
 
@@ -34,20 +33,22 @@ function mostrarResultados(data) {
   headers.forEach(header => html += `<th>${header}</th>`);
   html += "</tr></thead><tbody>";
 
-  data.forEach((fila, index) => {
+  const maxResultados = 5;
+  data.slice(0, maxResultados).forEach((fila, index) => {
     const filaIndex = fila[8];
+    const checked = index === 0 ? "checked" : "";
     html += "<tr>";
-    html += `<td><input type="radio" name="seleccion" value="${filaIndex}" ${data.length === 1 ? "checked" : ""} onchange="filaSeleccionada=${filaIndex}"></td>`;
+    html += `<td><input type="radio" name="seleccion" value="${filaIndex}" ${checked} onchange="filaSeleccionada=${filaIndex}"></td>`;
     html += `<td>${fila[0]}</td><td>${fila[1]}</td><td>${fila[3]}</td><td>${fila[4]}</td><td>${fila[6]}</td><td>${fila[7]}</td><td>${fila[10]}</td><td>${fila[11]}</td>`;
     html += "</tr>";
+
+    if (index === 0) {
+      filaSeleccionada = filaIndex;
+    }
   });
 
   html += "</tbody></table>";
   contenedor.innerHTML = html;
-
-  if (data.length === 1) {
-    filaSeleccionada = data[0][8];
-  }
 }
 
 async function registrarVenta() {
