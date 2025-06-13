@@ -45,10 +45,16 @@ function mostrarResultados(data) {
   html += "</tr></thead><tbody>";
 
   const maxResultados = 5;
-  data.slice(0, maxResultados).forEach((fila) => {
-    const filaIndex = fila[8];
-    html += "<tr>";
-    html += `<td><input type="checkbox" value="${filaIndex}" onchange="toggleSeleccion(this)"></td>`;
+  data.slice(0, maxResultados).forEach((fila, index) => {
+  const filaIndex = fila[8];
+  const checked = index === 0 ? "checked" : "";
+  if (index === 0) {
+    filasSeleccionadas.push(filaIndex);
+  }
+
+  html += "<tr>";
+  html += `<td><input type="checkbox" value="${filaIndex}" ${checked} onchange="toggleSeleccion(this)"></td>`;
+
     html += `<td>${fila[0]}</td><td>${fila[1]}</td><td>${fila[3]}</td><td>${fila[4]}</td><td>${fila[6]}</td><td>${fila[7]}</td><td>${fila[10]}</td><td>${fila[11]}</td>`;
     html += "</tr>";
   });
