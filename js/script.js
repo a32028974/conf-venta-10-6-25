@@ -6,10 +6,15 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById("fechaActual").innerText = hoy.toLocaleDateString("es-AR") + " " + hoy.toLocaleTimeString("es-AR");
 
   document.getElementById("codigo").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      buscarArticulo();
-    }
-  });
+  if (e.key === "Enter") {
+    buscarArticulo();
+  }
+  if (e.key === "Tab") {
+    e.preventDefault(); // ✋ detenemos el tab normal
+    document.getElementById("vendedor").focus(); // 👉 salta al input de vendedor
+  }
+});
+
 
   document.getElementById("vendedor").addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
