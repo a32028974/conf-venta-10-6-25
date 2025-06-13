@@ -1,5 +1,5 @@
 const URL = 'https://script.google.com/macros/s/AKfycbxT6imc7LuSZUFIyPNXOrgnXoyLQzytzr-thNI4cylyg1s8Ms19dT2xv-okCCbdsZLWoA/exec';
-let filaSeleccionada = null;
+let filasSeleccionadas = [];
 
 document.addEventListener('DOMContentLoaded', () => {
   const hoy = new Date();
@@ -23,6 +23,8 @@ async function buscarArticulo() {
 
 function mostrarResultados(data) {
   const contenedor = document.getElementById('resultados');
+  filasSeleccionadas = []; // Reiniciar selección
+
   if (data.length === 0) {
     contenedor.innerHTML = "<p>No se encontraron resultados.</p>";
     return;
@@ -34,54 +36,68 @@ function mostrarResultados(data) {
   html += "</tr></thead><tbody>";
 
   const maxResultados = 5;
-  data.slice(0, maxResultados).forEach((fila, index) => {
+  data.slice(0, maxResultados).forEach((fila) => {
     const filaIndex = fila[8];
-    const checked = index === 0 ? "checked" : "";
     html += "<tr>";
-    html += `<td><input type="radio" name="seleccion" value="${filaIndex}" ${checked} onchange="filaSeleccionada=${filaIndex}"></td>`;
+    html += `<td><input type="checkbox" value="${filaIndex}" onchange="toggleSeleccion(this)"></td>`;
     html += `<td>${fila[0]}</td><td>${fila[1]}</td><td>${fila[3]}</td><td>${fila[4]}</td><td>${fila[6]}</td><td>${fila[7]}</td><td>${fila[10]}</td><td>${fila[11]}</td>`;
     html += "</tr>";
-
-    if (index === 0) {
-      filaSeleccionada = filaIndex;
-    }
   });
 
   html += "</tbody></table>";
   contenedor.innerHTML = html;
 }
 
+function toggleSeleccion(checkbox) {
+  const valor = checkbox.value;
+  if (checkbox.checked) {
+    filasSeleccionadas.push(valor);
+  } else {
+    filasSeleccionadas = filasSeleccionadas.filter(f => f !== valor);
+  }
+}
+
 async function registrarVenta() {
   const vendedor = document.getElementById('vendedor').value.trim();
   if (!vendedor) return alert("Ingresá el nombre del vendedor.");
-  if (filaSeleccionada === null) return alert("Seleccioná un artículo.");
+  if (filasSeleccionadas.length === 0) return alert("Seleccioná al menos un artículo.");
 
-  const response = await fetch(`${URL}?fila=${filaSeleccionada}&vendedor=${encodeURIComponent(vendedor)}`);
-  const result = await response.json();
+  let exitos = 0;
 
-  if (result.success) {
-    alert("Venta registrada correctamente.");
-    buscarArticulo();
+  for (const fila of filasSeleccionadas) {
+    const response = await fetch(`${URL}?fila=${fila}&vendedor=${encodeURIComponent(vendedor)}`);
+    const result = await response.json();
+    if (result.success) exitos++;
+  }
+
+  if (exitos > 0) {
+    alert(`Se registraron ${exitos} venta(s) correctamente.`);
+    buscarArticulo(); // Recarga la tabla
     document.getElementById('vendedor').value = '';
   } else {
-    alert("Hubo un error al registrar la venta.");
+    alert("Hubo un error al registrar las ventas.");
   }
 }
 
 async function eliminarVenta() {
-  if (filaSeleccionada === null) return alert("Seleccioná un artículo para eliminar la venta.");
+  if (filasSeleccionadas.length === 0) return alert("Seleccioná al menos un artículo para eliminar la venta.");
 
-  const confirmar = confirm("¿Estás seguro de que querés eliminar esta venta?");
+  const confirmar = confirm(`¿Estás seguro de que querés eliminar ${filasSeleccionadas.length} venta(s)?`);
   if (!confirmar) return;
 
-  const response = await fetch(`${URL}?fila=${filaSeleccionada}&borrar=true`);
-  const result = await response.json();
+  let eliminados = 0;
 
-  if (result.success) {
-    alert("Venta eliminada correctamente.");
+  for (const fila of filasSeleccionadas) {
+    const response = await fetch(`${URL}?fila=${fila}&borrar=true`);
+    const result = await response.json();
+    if (result.success) eliminados++;
+  }
+
+  if (eliminados > 0) {
+    alert(`Se eliminaron ${eliminados} venta(s) correctamente.`);
     buscarArticulo();
     document.getElementById('vendedor').value = '';
   } else {
-    alert("Error al eliminar la venta.");
+    alert("Error al eliminar las ventas.");
   }
 }
