@@ -10,7 +10,14 @@ document.addEventListener('DOMContentLoaded', () => {
       buscarArticulo();
     }
   });
+
+  document.getElementById("vendedor").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      registrarVenta();
+    }
+  });
 });
+
 
 async function buscarArticulo() {
   const codigo = document.getElementById('codigo').value.trim();
