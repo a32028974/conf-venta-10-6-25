@@ -51,16 +51,22 @@ function mostrarResultados(data) {
 
   const maxResultados = 5;
   data.slice(0, maxResultados).forEach((fila, index) => {
-  const filaIndex = fila[8];
-  const checked = index === 0 ? "checked" : "";
-  if (index === 0) {
-    filasSeleccionadas.push(filaIndex);
-  }
+    const filaIndex = fila[8];
+    const checked = index === 0 ? "checked" : "";
+    if (index === 0) {
+      filasSeleccionadas.push(filaIndex);
+    }
 
-  html += "<tr>";
-  html += `<td><input type="checkbox" value="${filaIndex}" ${checked} onchange="toggleSeleccion(this)"></td>`;
-
-    html += `<td>${fila[0]}</td><td>${fila[1]}</td><td>${fila[3]}</td><td>${fila[4]}</td><td>${fila[6]}</td><td>${fila[7]}</td><td>${fila[10]}</td><td>${fila[11]}</td>`;
+    html += "<tr>";
+    html += `<td><input type="checkbox" value="${filaIndex}" ${checked} onchange="toggleSeleccion(this)"></td>`;
+    html += `<td>${fila[0]}</td>`;  // N° ANT
+    html += `<td>${fila[1]}</td>`;  // MARCA
+    html += `<td>${fila[2]}</td>`;  // MODELO ✅ CORREGIDO
+    html += `<td>${fila[3]}</td>`;  // COLOR ✅ CORREGIDO
+    html += `<td>${fila[4]}</td>`;  // ARMAZON ✅ CORREGIDO
+    html += `<td>${fila[5]}</td>`;  // CALIBRE ✅ CORREGIDO
+    html += `<td>${fila[10]}</td>`; // FECHA DE VENTA
+    html += `<td>${fila[11]}</td>`; // VENDEDOR
     html += "</tr>";
   });
 
@@ -68,14 +74,6 @@ function mostrarResultados(data) {
   contenedor.innerHTML = html;
 }
 
-function toggleSeleccion(checkbox) {
-  const valor = checkbox.value;
-  if (checkbox.checked) {
-    filasSeleccionadas.push(valor);
-  } else {
-    filasSeleccionadas = filasSeleccionadas.filter(f => f !== valor);
-  }
-}
 
 async function registrarVenta() {
   const vendedor = document.getElementById('vendedor').value.trim();
