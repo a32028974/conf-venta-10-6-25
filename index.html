@@ -2,20 +2,22 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Gestión de Ventas - Óptica </title>
+  <title>Gestión de Ventas - Óptica V14.6.25 19.12 </title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <div class="container">
     <div class="top">
       <div>
+        <!-- Cuadro rojo -->
         <div style="margin-bottom: 10px;">
-  <label for="top-vendedor"><strong>📈 Mejor vendedor:</strong></label>
-  <input id="top-vendedor" type="text" readonly style="border: 2px solid red; padding: 4px; font-weight: bold;">
-</div>
+          <label for="top-vendedor"><strong>📈 Mejor vendedor:</strong></label>
+          <input id="top-vendedor" type="text" readonly style="border: 2px solid red; padding: 4px; font-weight: bold; width: 300px;">
+        </div>
 
-        <label for="codigo">V 14.6.25.18.47 Código del Artículo:</label>
-        <input type="text" id="codigo" placeholder="Ej: ABC123">
+        <!-- Código de producto -->
+        <label for="codigo">Código del Artículo:</label>
+        <input type="text" id="codigo" placeholder="Ej: 11345">
       </div>
       <div class="acciones">
         <button onclick="buscarArticulo()">Buscar</button>
@@ -25,6 +27,13 @@
 
     <div id="resultados" class="tabla"></div>
 
+    <!-- Cuadro verde de ranking -->
+    <div style="border: 2px solid limegreen; padding: 10px; margin-top: 20px; width: 300px;" id="ranking-vendedores">
+      <strong>🏆 Ranking de Vendedores</strong>
+      <ul id="lista-vendedores" style="list-style: none; padding-left: 0;"></ul>
+    </div>
+
+    <!-- Acciones -->
     <div class="acciones-venta">
       <label for="vendedor">Nombre del Vendedor:</label>
       <input type="text" id="vendedor" placeholder="Ej: Juan">
