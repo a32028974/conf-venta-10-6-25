@@ -1,4 +1,4 @@
-const URL = 'https://script.google.com/macros/s/AKfycbxT6imc7LuSZUFIyPNXOrgnXoyLQzytzr-thNI4cylyg1s8Ms19dT2xv-okCCbdsZLWoA/exec';
+const URL = 'https://script.google.com/macros/s/AKfycbyZpgCOy4VFFPE_gq_jpv9Ed5KsPjJqLAX-8SEohVRYl_qAm2PIpEtpAALLvRx9Bdt7Pg/exec';
 let filasSeleccionadas = [];
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -6,21 +6,22 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById("fechaActual").innerText = hoy.toLocaleDateString("es-AR") + " " + hoy.toLocaleTimeString("es-AR");
 
   document.getElementById("codigo").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    buscarArticulo();
-  }
-  if (e.key === "Tab") {
-    e.preventDefault(); // ✋ detenemos el tab normal
-    document.getElementById("vendedor").focus(); // 👉 salta al input de vendedor
-  }
-});
-
+    if (e.key === "Enter") {
+      buscarArticulo();
+    }
+    if (e.key === "Tab") {
+      e.preventDefault();
+      document.getElementById("vendedor").focus();
+    }
+  });
 
   document.getElementById("vendedor").addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       registrarVenta();
     }
   });
+
+  actualizarTopVendedor();
 });
 
 async function buscarArticulo() {
@@ -61,10 +62,10 @@ function mostrarResultados(data) {
     html += `<td><input type="checkbox" value="${filaIndex}" ${checked} onchange="toggleSeleccion(this)"></td>`;
     html += `<td>${fila[0]}</td>`;  // N° ANT
     html += `<td>${fila[1]}</td>`;  // MARCA
-    html += `<td>${fila[2]}</td>`;  // MODELO ✅ CORREGIDO
-    html += `<td>${fila[3]}</td>`;  // COLOR ✅ CORREGIDO
-    html += `<td>${fila[4]}</td>`;  // ARMAZON ✅ CORREGIDO
-    html += `<td>${fila[5]}</td>`;  // CALIBRE ✅ CORREGIDO
+    html += `<td>${fila[2]}</td>`;  // MODELO
+    html += `<td>${fila[3]}</td>`;  // COLOR
+    html += `<td>${fila[4]}</td>`;  // ARMAZON
+    html += `<td>${fila[5]}</td>`;  // CALIBRE
     html += `<td>${fila[10]}</td>`; // FECHA DE VENTA
     html += `<td>${fila[11]}</td>`; // VENDEDOR
     html += "</tr>";
@@ -74,6 +75,14 @@ function mostrarResultados(data) {
   contenedor.innerHTML = html;
 }
 
+function toggleSeleccion(checkbox) {
+  const valor = checkbox.value;
+  if (checkbox.checked) {
+    filasSeleccionadas.push(valor);
+  } else {
+    filasSeleccionadas = filasSeleccionadas.filter(f => f !== valor);
+  }
+}
 
 async function registrarVenta() {
   const vendedor = document.getElementById('vendedor').value.trim();
@@ -98,6 +107,7 @@ async function registrarVenta() {
     mostrarMensaje(`Se registraron ${exitos} venta(s) correctamente.`);
     buscarArticulo();
     document.getElementById('vendedor').value = '';
+    actualizarTopVendedor();
   } else {
     mostrarMensaje("Hubo un error al registrar las ventas.", "#dc3545");
   }
@@ -124,6 +134,7 @@ async function eliminarVenta() {
     mostrarMensaje(`Se eliminaron ${eliminados} venta(s) correctamente.`, "#ffc107");
     buscarArticulo();
     document.getElementById('vendedor').value = '';
+    actualizarTopVendedor();
   } else {
     mostrarMensaje("Error al eliminar las ventas.", "#dc3545");
   }
@@ -138,4 +149,34 @@ function mostrarMensaje(texto, color = "#28a745") {
   setTimeout(() => {
     div.style.display = "none";
   }, 2000);
+}
+
+function actualizarTopVendedor() {
+  fetch(`${URL}?topVendedor=true`)
+    .then(res => res.json())
+    .then(data => {
+      const ranking = data.ranking || [];
+
+      if (ranking.length > 0) {
+        const top = ranking[0];
+        document.getElementById("top-vendedor").value = `${top.vendedor} (${top.cantidad} ventas)`;
+
+        const lista = document.getElementById("lista-vendedores");
+        lista.innerHTML = "";
+
+        ranking.slice(1).forEach(item => {
+          const li = document.createElement("li");
+          li.textContent = `${item.vendedor} — ${item.cantidad} venta${item.cantidad === 1 ? "" : "s"}`;
+          lista.appendChild(li);
+        });
+      } else {
+        document.getElementById("top-vendedor").value = "Sin datos";
+        document.getElementById("lista-vendedores").innerHTML = "<li>No hay vendedores aún.</li>";
+      }
+    })
+    .catch(err => {
+      console.error("Error obteniendo ranking de vendedores:", err);
+      document.getElementById("top-vendedor").value = "Error";
+      document.getElementById("lista-vendedores").innerHTML = "<li>Error al cargar ranking.</li>";
+    });
 }
