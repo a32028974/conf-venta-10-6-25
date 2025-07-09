@@ -31,9 +31,13 @@ async function buscarArticulo() {
     return;
   }
 
+  document.getElementById('spinner').style.display = 'block';
+
   const response = await fetch(`${URL}?codigo=${codigo}`);
   const data = await response.json();
   mostrarResultados(data);
+
+  document.getElementById('spinner').style.display = 'none';
 }
 
 function mostrarResultados(data) {
