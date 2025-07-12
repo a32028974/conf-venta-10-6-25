@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById("vendedor").focus();
     }
   });
+document.getElementById("codigo").addEventListener("blur", buscarArticulo);
 
   document.getElementById("vendedor").addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
