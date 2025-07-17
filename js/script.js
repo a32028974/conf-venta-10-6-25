@@ -190,7 +190,7 @@ function actualizarTopVendedor() {
     });
 }
 
-// ✅ NUEVAS FUNCIONES DE FORMATO
+// ✅ FORMATO DE FECHA
 function formatearFechaCorta(fecha) {
   const dia = String(fecha.getDate()).padStart(2, '0');
   const mes = String(fecha.getMonth() + 1).padStart(2, '0');
@@ -199,9 +199,10 @@ function formatearFechaCorta(fecha) {
 }
 
 function formatearFechaTexto(fechaTexto) {
-  const partes = fechaTexto.split("/");
-  if (partes.length === 3) {
-    return `${partes[0].padStart(2, '0')}-${partes[1].padStart(2, '0')}-${partes[2]}`;
-  }
-  return fechaTexto;
+  const fecha = new Date(fechaTexto);
+  if (isNaN(fecha)) return fechaTexto;
+  const dia = String(fecha.getDate()).padStart(2, '0');
+  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+  const año = fecha.getFullYear();
+  return `${dia}-${mes}-${año}`;
 }
