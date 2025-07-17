@@ -3,7 +3,7 @@ let filasSeleccionadas = [];
 
 document.addEventListener('DOMContentLoaded', () => {
   const hoy = new Date();
-  document.getElementById("fechaActual").innerText = hoy.toLocaleDateString("es-AR") + " " + hoy.toLocaleTimeString("es-AR");
+  document.getElementById("fechaActual").innerText = formatearFechaCorta(hoy);
 
   document.getElementById("codigo").addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
@@ -14,7 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById("vendedor").focus();
     }
   });
-document.getElementById("codigo").addEventListener("blur", buscarArticulo);
+
+  document.getElementById("codigo").addEventListener("blur", buscarArticulo);
 
   document.getElementById("vendedor").addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
@@ -63,6 +64,9 @@ function mostrarResultados(data) {
       filasSeleccionadas.push(filaIndex);
     }
 
+    const fechaRaw = fila[10];
+    const fechaFormateada = fechaRaw ? formatearFechaTexto(fechaRaw) : "";
+
     html += "<tr>";
     html += `<td><input type="checkbox" value="${filaIndex}" ${checked} onchange="toggleSeleccion(this)"></td>`;
     html += `<td>${fila[0]}</td>`;  // N° ANT
@@ -71,7 +75,7 @@ function mostrarResultados(data) {
     html += `<td>${fila[3]}</td>`;  // COLOR
     html += `<td>${fila[4]}</td>`;  // ARMAZON
     html += `<td>${fila[5]}</td>`;  // CALIBRE
-    html += `<td>${fila[10]}</td>`; // FECHA DE VENTA
+    html += `<td>${fechaFormateada}</td>`; // FECHA DE VENTA (formateada)
     html += `<td>${fila[11]}</td>`; // VENDEDOR
     html += "</tr>";
   });
@@ -184,4 +188,20 @@ function actualizarTopVendedor() {
       document.getElementById("top-vendedor").value = "Error";
       document.getElementById("lista-vendedores").innerHTML = "<li>Error al cargar ranking.</li>";
     });
+}
+
+// ✅ NUEVAS FUNCIONES DE FORMATO
+function formatearFechaCorta(fecha) {
+  const dia = String(fecha.getDate()).padStart(2, '0');
+  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+  const año = fecha.getFullYear();
+  return `${dia}-${mes}-${año}`;
+}
+
+function formatearFechaTexto(fechaTexto) {
+  const partes = fechaTexto.split("/");
+  if (partes.length === 3) {
+    return `${partes[0].padStart(2, '0')}-${partes[1].padStart(2, '0')}-${partes[2]}`;
+  }
+  return fechaTexto;
 }
