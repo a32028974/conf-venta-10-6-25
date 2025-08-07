@@ -1,20 +1,29 @@
 const URL = 'https://script.google.com/macros/s/AKfycbyZpgCOy4VFFPE_gq_jpv9Ed5KsPjJqLAX-8SEohVRYl_qAm2PIpEtpAALLvRx9Bdt7Pg/exec';
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const res = await fetch(`${URL}?todos=true`);
-  const datos = await res.json();
+  try {
+    const res = await fetch(`${URL}?todos=true`);
+    const datos = await res.json();
 
-  let numeroLibre = '';
-  for (let i = 1; i < datos.length; i++) {
-    const fila = datos[i];
-    const estaVacia = fila.slice(1, 8).every(c => !c);
-    if (fila[0] && estaVacia) {
-      numeroLibre = fila[0];
-      break;
+    let numeroLibre = '';
+    for (let i = 1; i < datos.length; i++) {
+      const fila = datos[i];
+      const estaVacia = fila.slice(1, 8).every(c => !c);
+      if (fila[0] && estaVacia) {
+        numeroLibre = fila[0];
+        break;
+      }
     }
-  }
 
-  document.getElementById('n_anteojo').value = numeroLibre;
+    if (numeroLibre) {
+      document.getElementById('n_anteojo').value = numeroLibre;
+    } else {
+      document.getElementById('mensaje-flotante').innerText = "⚠ No se encontró número libre.";
+    }
+  } catch (error) {
+    console.error("Error al buscar número:", error);
+    document.getElementById("mensaje-flotante").innerText = "⚠ Error al buscar número.";
+  }
 });
 
 function calcularPrecio() {
@@ -30,37 +39,49 @@ function calcularPrecio() {
 }
 
 async function guardar() {
+  const n_anteojo = document.getElementById("n_anteojo").value.trim();
+  const marca = document.getElementById("marca").value.trim();
+  const modelo = document.getElementById("modelo").value.trim();
+
+  if (!n_anteojo || !marca || !modelo) {
+    mostrarMensaje("⚠ Completá N° anteojo, marca y modelo.", "red");
+    return;
+  }
+
   const params = new URLSearchParams({
-    n_anteojo: document.getElementById("n_anteojo").value,
-    marca: document.getElementById("marca").value,
-    modelo: document.getElementById("modelo").value,
-    codigo_color: document.getElementById("codigo_color").value,
-    color_armazon: document.getElementById("color_armazon").value,
-    calibre: document.getElementById("calibre").value,
-    color_cristal: document.getElementById("color_cristal").value,
+    n_anteojo,
+    marca,
+    modelo,
+    codigo_color: document.getElementById("codigo_color").value.trim(),
+    color_armazon: document.getElementById("color_armazon").value.trim(),
+    calibre: document.getElementById("calibre").value.trim(),
+    color_cristal: document.getElementById("color_cristal").value.trim(),
     familia: document.getElementById("familia").value,
     precio: document.getElementById("precio").value,
     costo: document.getElementById("costo").value,
     fecha_ingreso: new Date().toLocaleDateString("es-AR"),
-    codigo_barras: document.getElementById("codigo_barras").value,
-    observaciones: document.getElementById("observaciones").value
+    codigo_barras: document.getElementById("codigo_barras").value.trim(),
+    observaciones: document.getElementById("observaciones").value.trim()
   });
 
   try {
     const res = await fetch(`${URL}?${params.toString()}`);
     const data = await res.json();
 
-    const msg = document.getElementById("mensaje-flotante");
     if (data.success) {
-      msg.innerText = `✅ Guardado correctamente: ${params.get("n_anteojo")}`;
-      msg.style.color = "green";
+      mostrarMensaje(`✅ Guardado correctamente: ${n_anteojo}`, "green");
       setTimeout(() => location.reload(), 1500);
     } else {
-      msg.innerText = "❌ Error al guardar.";
-      msg.style.color = "red";
+      mostrarMensaje("❌ Error al guardar.", "red");
     }
   } catch (error) {
     console.error(error);
-    document.getElementById("mensaje-flotante").innerText = "❌ Error de conexión.";
+    mostrarMensaje("❌ Error de conexión con el servidor.", "red");
   }
+}
+
+function mostrarMensaje(texto, color = "black") {
+  const msg = document.getElementById("mensaje-flotante");
+  msg.innerText = texto;
+  msg.style.color = color;
 }
