@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Carga de Anteojos</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <h2>Cargar nuevo anteojo</h2>
+
+    <label>N° Anteojo</label>
+    <input type="number" id="n_anteojo" readonly>
+
+    <label>Marca</label>
+    <input type="text" id="marca">
+
+    <label>Modelo</label>
+    <input type="text" id="modelo">
+
+    <label>Código color</label>
+    <input type="text" id="codigo_color">
+
+    <label>Color armazón</label>
+    <input type="text" id="color_armazon">
+
+    <label>Calibre</label>
+    <input type="text" id="calibre">
+
+    <label>Color cristal</label>
+    <input type="text" id="color_cristal">
+
+    <label>Familia</label>
+    <select id="familia" onchange="calcularPrecio()">
+      <option value="">-- Seleccionar --</option>
+      <option value="SOL">SOL</option>
+      <option value="RECETA">RECETA</option>
+    </select>
+
+    <label>Costo</label>
+    <input type="number" id="costo" oninput="calcularPrecio()">
+
+    <label>Precio público</label>
+    <input type="number" id="precio" readonly>
+
+    <label>Código de barras</label>
+    <input type="text" id="codigo_barras">
+
+    <label>Observaciones</label>
+    <input type="text" id="observaciones">
+
+    <button onclick="guardar()">Guardar</button>
+
+    <div id="mensaje-flotante" style="margin-top: 20px; font-weight: bold;"></div>
+  </div>
+
+  <script src="js/carga.js"></script>
+</body>
+</html>
