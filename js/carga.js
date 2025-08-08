@@ -1,7 +1,24 @@
 const URL = 'https://script.google.com/macros/s/AKfycbwTzBbMEISZjU3rvn5uEzjQN20iO-xg_EBgXbwXgQTTv-4ULYGoRCft6bWUwDcimyeUMQ/exec';
 
+// ===== Claves en localStorage =====
+const LS_MARCA_KEY = 'ultimaMarcaAnteojos';
+const LS_FAMILIA_KEY = 'ultimaFamiliaAnteojos';
+
 document.addEventListener('DOMContentLoaded', async () => {
   try {
+    // Recuperar MARCA y FAMILIA guardadas
+    const guardadaMarca = localStorage.getItem(LS_MARCA_KEY);
+    if (guardadaMarca) {
+      const marcaInput = document.getElementById('marca');
+      if (marcaInput) marcaInput.value = guardadaMarca;
+    }
+    const guardadaFamilia = localStorage.getItem(LS_FAMILIA_KEY);
+    if (guardadaFamilia) {
+      const familiaSelect = document.getElementById('familia');
+      if (familiaSelect) familiaSelect.value = guardadaFamilia;
+    }
+
+    // Buscar número libre
     const res = await fetch(`${URL}?todos=true`);
     const datos = await res.json();
 
@@ -23,6 +40,40 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch (error) {
     console.error("Error al buscar número:", error);
     document.getElementById("mensaje-flotante").innerText = "⚠ Error al buscar número.";
+  }
+
+  // Guardar MARCA y FAMILIA a medida que cambian
+  const marcaEl = document.getElementById('marca');
+  if (marcaEl) {
+    const persistMarca = () => {
+      const v = marcaEl.value.trim();
+      if (v) localStorage.setItem(LS_MARCA_KEY, v);
+    };
+    marcaEl.addEventListener('change', persistMarca);
+    marcaEl.addEventListener('input', persistMarca);
+  }
+
+  const familiaEl = document.getElementById('familia');
+  if (familiaEl) {
+    const persistFamilia = () => {
+      const v = familiaEl.value;
+      if (v) localStorage.setItem(LS_FAMILIA_KEY, v);
+    };
+    familiaEl.addEventListener('change', persistFamilia);
+  }
+});
+
+// ===== Enter = Guardar (salvo Shift+Enter en textarea) =====
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    const tag = e.target.tagName;
+    if (tag === 'TEXTAREA') {
+      e.preventDefault();
+      guardar();
+    } else if (tag === 'INPUT' || tag === 'SELECT') {
+      e.preventDefault();
+      guardar();
+    }
   }
 });
 
@@ -48,6 +99,11 @@ async function guardar() {
     return;
   }
 
+  // Guardar en localStorage para la próxima carga
+  localStorage.setItem(LS_MARCA_KEY, marca);
+  const familiaVal = document.getElementById("familia").value;
+  if (familiaVal) localStorage.setItem(LS_FAMILIA_KEY, familiaVal);
+
   const params = new URLSearchParams({
     n_anteojo,
     marca,
@@ -56,7 +112,7 @@ async function guardar() {
     color_armazon: document.getElementById("color_armazon").value.trim(),
     calibre: document.getElementById("calibre").value.trim(),
     color_cristal: document.getElementById("color_cristal").value.trim(),
-    familia: document.getElementById("familia").value,
+    familia: familiaVal,
     precio: document.getElementById("precio").value,
     costo: document.getElementById("costo").value,
     fecha_ingreso: new Date().toLocaleDateString("es-AR"),
@@ -70,7 +126,7 @@ async function guardar() {
 
     if (data.success) {
       mostrarMensaje(`✅ Guardado correctamente: ${n_anteojo}`, "green");
-      setTimeout(() => location.reload(), 1500);
+      setTimeout(() => location.reload(), 800);
     } else {
       mostrarMensaje("❌ Error al guardar.", "red");
     }
