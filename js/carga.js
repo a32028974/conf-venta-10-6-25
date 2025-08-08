@@ -4,45 +4,26 @@ const URL = 'https://script.google.com/macros/s/AKfycbwTzBbMEISZjU3rvn5uEzjQN20i
 const LS_MARCA_KEY = 'ultimaMarcaAnteojos';
 const LS_FAMILIA_KEY = 'ultimaFamiliaAnteojos';
 
+const msg = () => document.getElementById("mensaje-flotante");
+const btn = () => document.getElementById("btn-guardar");
+
 document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    // Recuperar MARCA y FAMILIA guardadas
-    const guardadaMarca = localStorage.getItem(LS_MARCA_KEY);
-    if (guardadaMarca) {
-      const marcaInput = document.getElementById('marca');
-      if (marcaInput) marcaInput.value = guardadaMarca;
-    }
-    const guardadaFamilia = localStorage.getItem(LS_FAMILIA_KEY);
-    if (guardadaFamilia) {
-      const familiaSelect = document.getElementById('familia');
-      if (familiaSelect) familiaSelect.value = guardadaFamilia;
-    }
-
-    // Buscar número libre
-    const res = await fetch(`${URL}?todos=true`);
-    const datos = await res.json();
-
-    let numeroLibre = '';
-    for (let i = 1; i < datos.length; i++) {
-      const fila = datos[i];
-      const estaVacia = fila.slice(1, 8).every(c => !c);
-      if (fila[0] && estaVacia) {
-        numeroLibre = fila[0];
-        break;
-      }
-    }
-
-    if (numeroLibre) {
-      document.getElementById('n_anteojo').value = numeroLibre;
-    } else {
-      document.getElementById('mensaje-flotante').innerText = "⚠ No se encontró número libre.";
-    }
-  } catch (error) {
-    console.error("Error al buscar número:", error);
-    document.getElementById("mensaje-flotante").innerText = "⚠ Error al buscar número.";
+  // Recuperar MARCA y FAMILIA guardadas
+  const guardadaMarca = localStorage.getItem(LS_MARCA_KEY);
+  if (guardadaMarca) {
+    const marcaInput = document.getElementById('marca');
+    if (marcaInput) marcaInput.value = guardadaMarca;
+  }
+  const guardadaFamilia = localStorage.getItem(LS_FAMILIA_KEY);
+  if (guardadaFamilia) {
+    const familiaSelect = document.getElementById('familia');
+    if (familiaSelect) familiaSelect.value = guardadaFamilia;
   }
 
-  // Guardar MARCA y FAMILIA a medida que cambian
+  // Número libre inicial
+  await setNumeroLibre();
+
+  // Persistir cambios de marca/familia
   const marcaEl = document.getElementById('marca');
   if (marcaEl) {
     const persistMarca = () => {
@@ -67,16 +48,67 @@ document.addEventListener('DOMContentLoaded', async () => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     const tag = e.target.tagName;
-    if (tag === 'TEXTAREA') {
-      e.preventDefault();
-      guardar();
-    } else if (tag === 'INPUT' || tag === 'SELECT') {
+    if (tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT') {
       e.preventDefault();
       guardar();
     }
   }
 });
 
+// ------- Utils -------
+async function setNumeroLibre() {
+  try {
+    const res = await fetch(`${URL}?todos=true`);
+    const datos = await res.json();
+
+    let numeroLibre = '';
+    for (let i = 1; i < datos.length; i++) {
+      const fila = datos[i];
+      const estaVacia = fila.slice(1, 8).every(c => !c);
+      if (fila[0] && estaVacia) {
+        numeroLibre = fila[0];
+        break;
+      }
+    }
+
+    if (numeroLibre) {
+      document.getElementById('n_anteojo').value = numeroLibre;
+      msg().innerText = "Listo para cargar 👓";
+      msg().style.color = "black";
+    } else {
+      msg().innerText = "⚠ No se encontró número libre.";
+      msg().style.color = "orange";
+    }
+  } catch (error) {
+    console.error("Error al buscar número:", error);
+    msg().innerText = "⚠ Error al buscar número.";
+    msg().style.color = "red";
+  }
+}
+
+function limpiarParaSiguiente() {
+  const marcaGuardada = localStorage.getItem(LS_MARCA_KEY) || "";
+  const familiaGuardada = localStorage.getItem(LS_FAMILIA_KEY) || "";
+
+  // Limpiar todos menos marca/familia
+  const ids = [
+    'n_anteojo','modelo','codigo_color','color_armazon','calibre',
+    'color_cristal','costo','precio','codigo_barras','observaciones'
+  ];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+
+  // Restaurar persistentes
+  document.getElementById('marca').value = marcaGuardada;
+  document.getElementById('familia').value = familiaGuardada;
+
+  // Focus donde te convenga para velocidad
+  document.getElementById('modelo').focus();
+}
+
+// ------- Cálculo de precio -------
 function calcularPrecio() {
   const costo = parseFloat(document.getElementById('costo').value);
   const familia = document.getElementById('familia').value;
@@ -88,7 +120,9 @@ function calcularPrecio() {
     document.getElementById('precio').value = '';
   }
 }
+window.calcularPrecio = calcularPrecio; // por si lo usás inline en el HTML
 
+// ------- Guardar -------
 async function guardar() {
   const n_anteojo = document.getElementById("n_anteojo").value.trim();
   const marca = document.getElementById("marca").value.trim();
@@ -99,7 +133,7 @@ async function guardar() {
     return;
   }
 
-  // Guardar en localStorage para la próxima carga
+  // Persistir marca y familia
   localStorage.setItem(LS_MARCA_KEY, marca);
   const familiaVal = document.getElementById("familia").value;
   if (familiaVal) localStorage.setItem(LS_FAMILIA_KEY, familiaVal);
@@ -121,23 +155,30 @@ async function guardar() {
   });
 
   try {
+    if (btn()) btn().disabled = true;
     const res = await fetch(`${URL}?${params.toString()}`);
     const data = await res.json();
 
     if (data.success) {
       mostrarMensaje(`✅ Guardado correctamente: ${n_anteojo}`, "green");
-      setTimeout(() => location.reload(), 800);
+      // Preparar siguiente registro sin recargar
+      limpiarParaSiguiente();
+      await setNumeroLibre(); // trae el próximo libre
     } else {
       mostrarMensaje("❌ Error al guardar.", "red");
     }
   } catch (error) {
     console.error(error);
     mostrarMensaje("❌ Error de conexión con el servidor.", "red");
+  } finally {
+    if (btn()) btn().disabled = false;
   }
 }
 
 function mostrarMensaje(texto, color = "black") {
-  const msg = document.getElementById("mensaje-flotante");
-  msg.innerText = texto;
-  msg.style.color = color;
+  msg().innerText = texto;
+  msg().style.color = color;
 }
+
+// Por si necesitás usar guardar/calcularPrecio desde el HTML
+window.guardar = guardar;
