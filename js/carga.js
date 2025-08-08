@@ -1,13 +1,14 @@
 const URL = 'https://script.google.com/macros/s/AKfycbwTzBbMEISZjU3rvn5uEzjQN20iO-xg_EBgXbwXgQTTv-4ULYGoRCft6bWUwDcimyeUMQ/exec';
 
-// ===== Claves en localStorage =====
-const LS_MARCA_KEY = 'ultimaMarcaAnteojos';
+// ===== localStorage keys =====
+const LS_MARCA_KEY   = 'ultimaMarcaAnteojos';
 const LS_FAMILIA_KEY = 'ultimaFamiliaAnteojos';
+const LS_FABRICA_KEY = 'ultimaFabricaAnteojos';
 
 const msg = () => document.getElementById("mensaje-flotante");
 const btn = () => document.getElementById("btn-guardar");
 
-// -------- helpers de mayúsculas --------
+// --- helpers mayúsculas ---
 function toUpper(id) {
   const el = document.getElementById(id);
   return (el?.value || '').trim().toUpperCase();
@@ -17,40 +18,34 @@ function bindLiveUppercase(ids) {
     const el = document.getElementById(id);
     if (!el) return;
     el.addEventListener('input', () => {
-      const start = el.selectionStart;
-      const end = el.selectionEnd;
+      const s = el.selectionStart, e = el.selectionEnd;
       el.value = el.value.toUpperCase();
-      // restaurar posición del cursor
-      if (start != null && end != null) {
-        el.setSelectionRange(start, end);
-      }
+      if (s != null && e != null) el.setSelectionRange(s, e);
     });
   });
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // Recuperar MARCA y FAMILIA guardadas
-  const guardadaMarca = localStorage.getItem(LS_MARCA_KEY);
-  if (guardadaMarca) {
-    const marcaInput = document.getElementById('marca');
-    if (marcaInput) marcaInput.value = guardadaMarca;
-  }
-  const guardadaFamilia = localStorage.getItem(LS_FAMILIA_KEY);
-  if (guardadaFamilia) {
-    const familiaSelect = document.getElementById('familia');
-    if (familiaSelect) familiaSelect.value = guardadaFamilia;
-  }
+  // Restaurar marca/familia/fabrica
+  const m = localStorage.getItem(LS_MARCA_KEY);
+  if (m) { const el = document.getElementById('marca'); if (el) el.value = m; }
 
-  // Forzar mayúsculas en vivo en todos los campos de texto/textarea
+  const f = localStorage.getItem(LS_FAMILIA_KEY);
+  if (f) { const el = document.getElementById('familia'); if (el) el.value = f; }
+
+  const fab = localStorage.getItem(LS_FABRICA_KEY);
+  if (fab) { const el = document.getElementById('fabrica'); if (el) el.value = fab; }
+
+  // Forzar mayúsculas en vivo (texto/textarea)
   bindLiveUppercase([
     'n_anteojo','marca','modelo','codigo_color','color_armazon',
-    'calibre','color_cristal','codigo_barras','observaciones'
+    'calibre','color_cristal','codigo_barras','observaciones','fabrica'
   ]);
 
   // Número libre inicial
   await setNumeroLibre();
 
-  // Persistir cambios de marca/familia
+  // Persistir cambios de marca/familia/fabrica
   const marcaEl = document.getElementById('marca');
   if (marcaEl) {
     const persistMarca = () => {
@@ -69,20 +64,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     familiaEl.addEventListener('change', persistFamilia);
   }
+
+  const fabricaEl = document.getElementById('fabrica');
+  if (fabricaEl) {
+    const persistFabrica = () => {
+      const v = fabricaEl.value.trim().toUpperCase();
+      if (v) localStorage.setItem(LS_FABRICA_KEY, v);
+    };
+    fabricaEl.addEventListener('change', persistFabrica);
+    fabricaEl.addEventListener('input', persistFabrica);
+  }
 });
 
-// ===== Enter = Guardar (salvo Shift+Enter en textarea) =====
+// Enter = guardar (salvo Shift+Enter)
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
-    const tag = e.target.tagName;
-    if (tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT') {
+    const t = e.target.tagName;
+    if (t === 'TEXTAREA' || t === 'INPUT' || t === 'SELECT') {
       e.preventDefault();
       guardar();
     }
   }
 });
 
-// ------- Utils -------
+// --- número libre ---
 async function setNumeroLibre() {
   try {
     const res = await fetch(`${URL}?todos=true`);
@@ -92,67 +97,55 @@ async function setNumeroLibre() {
     for (let i = 1; i < datos.length; i++) {
       const fila = datos[i];
       const estaVacia = fila.slice(1, 8).every(c => !c);
-      if (fila[0] && estaVacia) {
-        numeroLibre = fila[0];
-        break;
-      }
+      if (fila[0] && estaVacia) { numeroLibre = fila[0]; break; }
     }
 
     if (numeroLibre) {
       const n = document.getElementById('n_anteojo');
       n.value = String(numeroLibre).toUpperCase();
-      msg().innerText = "Listo para cargar 👓";
-      msg().style.color = "black";
+      mostrarMensaje("Listo para cargar 👓", "black");
     } else {
-      msg().innerText = "⚠ No se encontró número libre.";
-      msg().style.color = "orange";
+      mostrarMensaje("⚠ No se encontró número libre.", "orange");
     }
-  } catch (error) {
-    console.error("Error al buscar número:", error);
-    msg().innerText = "⚠ Error al buscar número.";
-    msg().style.color = "red";
+  } catch (err) {
+    console.error("Error al buscar número:", err);
+    mostrarMensaje("⚠ Error al buscar número.", "red");
   }
 }
 
 function limpiarParaSiguiente() {
-  const marcaGuardada = localStorage.getItem(LS_MARCA_KEY) || "";
+  const marcaGuardada   = localStorage.getItem(LS_MARCA_KEY)   || "";
   const familiaGuardada = localStorage.getItem(LS_FAMILIA_KEY) || "";
+  const fabricaGuardada = localStorage.getItem(LS_FABRICA_KEY) || "";
 
-  // Limpiar todos menos marca/familia
-  const ids = [
-    'n_anteojo','modelo','codigo_color','color_armazon','calibre',
-    'color_cristal','costo','precio','codigo_barras','observaciones'
-  ];
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
+  // Limpiar todos menos los persistentes
+  ['n_anteojo','modelo','codigo_color','color_armazon','calibre',
+   'color_cristal','costo','precio','codigo_barras','observaciones']
+   .forEach(id => { const el = document.getElementById(id); if (el) el.value=''; });
 
-  // Restaurar persistentes (en mayúsculas ya)
-  document.getElementById('marca').value = marcaGuardada;
+  document.getElementById('marca').value   = marcaGuardada;
   document.getElementById('familia').value = familiaGuardada;
+  document.getElementById('fabrica').value = fabricaGuardada;
 
-  // Focus donde te convenga para velocidad
   document.getElementById('modelo').focus();
 }
 
-// ------- Cálculo de precio -------
+// --- precio automático ---
 function calcularPrecio() {
   const costo = parseFloat(document.getElementById('costo').value);
-  const familia = document.getElementById('familia').value;
-  if (!isNaN(costo) && (familia === "SOL" || familia === "RECETA")) {
-    const multiplicador = familia === "RECETA" ? 3.63 : 2.42;
-    const precio = Math.round(costo * multiplicador);
-    document.getElementById('precio').value = precio;
+  const fam = document.getElementById('familia').value;
+  if (!isNaN(costo) && (fam === "SOL" || fam === "RECETA")) {
+    const mult = fam === "RECETA" ? 3.63 : 2.42;
+    document.getElementById('precio').value = Math.round(costo * mult);
   } else {
     document.getElementById('precio').value = '';
   }
 }
-window.calcularPrecio = calcularPrecio; // por si lo usás inline en el HTML
+window.calcularPrecio = calcularPrecio; // por si lo usás inline
 
-// ------- Guardar -------
+// --- guardar ---
 async function guardar() {
-  // Tomo TODO en mayúsculas
+  // tomar todo en MAYÚSCULAS (texto)
   const n_anteojo   = toUpper("n_anteojo");
   const marca       = toUpper("marca");
   const modelo      = toUpper("modelo");
@@ -162,11 +155,15 @@ async function guardar() {
     return;
   }
 
-  // Persistir marca (en mayúsculas) y familia
+  // persistir marca/familia/fabrica
   localStorage.setItem(LS_MARCA_KEY, marca);
   const familiaVal = document.getElementById("familia").value;
   if (familiaVal) localStorage.setItem(LS_FAMILIA_KEY, familiaVal);
+  const fabricaVal = toUpper("fabrica");
+  if (fabricaVal) localStorage.setItem(LS_FABRICA_KEY, fabricaVal);
 
+  // ⚠ Orden corregido: fecha_ingreso ANTES que costo
+  // y FABRICA al final (nueva última columna)
   const params = new URLSearchParams({
     n_anteojo,
     marca,
@@ -175,12 +172,13 @@ async function guardar() {
     color_armazon:  toUpper("color_armazon"),
     calibre:        toUpper("calibre"),
     color_cristal:  toUpper("color_cristal"),
-    familia:        familiaVal, // select, ya está en valor correcto
+    familia:        familiaVal,
     precio:         document.getElementById("precio").value,
-    costo:          document.getElementById("costo").value,
     fecha_ingreso:  new Date().toLocaleDateString("es-AR"),
+    costo:          document.getElementById("costo").value,
     codigo_barras:  toUpper("codigo_barras"),
-    observaciones:  toUpper("observaciones")
+    observaciones:  toUpper("observaciones"),
+    fabrica:        fabricaVal                // <-- última posición
   });
 
   try {
@@ -190,9 +188,8 @@ async function guardar() {
 
     if (data.success) {
       mostrarMensaje(`✅ Guardado correctamente: ${n_anteojo}`, "green");
-      // Preparar siguiente registro sin recargar
       limpiarParaSiguiente();
-      await setNumeroLibre(); // trae el próximo libre
+      await setNumeroLibre();
     } else {
       mostrarMensaje("❌ Error al guardar.", "red");
     }
@@ -209,5 +206,4 @@ function mostrarMensaje(texto, color = "black") {
   msg().style.color = color;
 }
 
-// Por si necesitás usar guardar/calcularPrecio desde el HTML
 window.guardar = guardar;
