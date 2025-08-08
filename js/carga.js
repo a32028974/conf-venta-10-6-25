@@ -7,6 +7,27 @@ const LS_FAMILIA_KEY = 'ultimaFamiliaAnteojos';
 const msg = () => document.getElementById("mensaje-flotante");
 const btn = () => document.getElementById("btn-guardar");
 
+// -------- helpers de mayúsculas --------
+function toUpper(id) {
+  const el = document.getElementById(id);
+  return (el?.value || '').trim().toUpperCase();
+}
+function bindLiveUppercase(ids) {
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', () => {
+      const start = el.selectionStart;
+      const end = el.selectionEnd;
+      el.value = el.value.toUpperCase();
+      // restaurar posición del cursor
+      if (start != null && end != null) {
+        el.setSelectionRange(start, end);
+      }
+    });
+  });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   // Recuperar MARCA y FAMILIA guardadas
   const guardadaMarca = localStorage.getItem(LS_MARCA_KEY);
@@ -20,6 +41,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (familiaSelect) familiaSelect.value = guardadaFamilia;
   }
 
+  // Forzar mayúsculas en vivo en todos los campos de texto/textarea
+  bindLiveUppercase([
+    'n_anteojo','marca','modelo','codigo_color','color_armazon',
+    'calibre','color_cristal','codigo_barras','observaciones'
+  ]);
+
   // Número libre inicial
   await setNumeroLibre();
 
@@ -27,7 +54,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const marcaEl = document.getElementById('marca');
   if (marcaEl) {
     const persistMarca = () => {
-      const v = marcaEl.value.trim();
+      const v = marcaEl.value.trim().toUpperCase();
       if (v) localStorage.setItem(LS_MARCA_KEY, v);
     };
     marcaEl.addEventListener('change', persistMarca);
@@ -72,7 +99,8 @@ async function setNumeroLibre() {
     }
 
     if (numeroLibre) {
-      document.getElementById('n_anteojo').value = numeroLibre;
+      const n = document.getElementById('n_anteojo');
+      n.value = String(numeroLibre).toUpperCase();
       msg().innerText = "Listo para cargar 👓";
       msg().style.color = "black";
     } else {
@@ -100,7 +128,7 @@ function limpiarParaSiguiente() {
     if (el) el.value = '';
   });
 
-  // Restaurar persistentes
+  // Restaurar persistentes (en mayúsculas ya)
   document.getElementById('marca').value = marcaGuardada;
   document.getElementById('familia').value = familiaGuardada;
 
@@ -124,16 +152,17 @@ window.calcularPrecio = calcularPrecio; // por si lo usás inline en el HTML
 
 // ------- Guardar -------
 async function guardar() {
-  const n_anteojo = document.getElementById("n_anteojo").value.trim();
-  const marca = document.getElementById("marca").value.trim();
-  const modelo = document.getElementById("modelo").value.trim();
+  // Tomo TODO en mayúsculas
+  const n_anteojo   = toUpper("n_anteojo");
+  const marca       = toUpper("marca");
+  const modelo      = toUpper("modelo");
 
   if (!n_anteojo || !marca || !modelo) {
     mostrarMensaje("⚠ Completá N° anteojo, marca y modelo.", "red");
     return;
   }
 
-  // Persistir marca y familia
+  // Persistir marca (en mayúsculas) y familia
   localStorage.setItem(LS_MARCA_KEY, marca);
   const familiaVal = document.getElementById("familia").value;
   if (familiaVal) localStorage.setItem(LS_FAMILIA_KEY, familiaVal);
@@ -142,16 +171,16 @@ async function guardar() {
     n_anteojo,
     marca,
     modelo,
-    codigo_color: document.getElementById("codigo_color").value.trim(),
-    color_armazon: document.getElementById("color_armazon").value.trim(),
-    calibre: document.getElementById("calibre").value.trim(),
-    color_cristal: document.getElementById("color_cristal").value.trim(),
-    familia: familiaVal,
-    precio: document.getElementById("precio").value,
-    costo: document.getElementById("costo").value,
-    fecha_ingreso: new Date().toLocaleDateString("es-AR"),
-    codigo_barras: document.getElementById("codigo_barras").value.trim(),
-    observaciones: document.getElementById("observaciones").value.trim()
+    codigo_color:   toUpper("codigo_color"),
+    color_armazon:  toUpper("color_armazon"),
+    calibre:        toUpper("calibre"),
+    color_cristal:  toUpper("color_cristal"),
+    familia:        familiaVal, // select, ya está en valor correcto
+    precio:         document.getElementById("precio").value,
+    costo:          document.getElementById("costo").value,
+    fecha_ingreso:  new Date().toLocaleDateString("es-AR"),
+    codigo_barras:  toUpper("codigo_barras"),
+    observaciones:  toUpper("observaciones")
   });
 
   try {
