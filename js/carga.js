@@ -167,23 +167,24 @@ async function guardar() {
   // - NO enviamos "costo" (así no se escribe la columna I).
   // - "fecha_ingreso" la mandamos normal; el backend la escribirá en el encabezado FECHA INGRESO,
   //   que vos ya moviste a la columna M.
-  const params = new URLSearchParams({
-    action:        'guardar_anteojo',
-    n_anteojo,
-    marca,
-    modelo,
-    codigo_color:   toUpper("codigo_color"),
-    color_armazon:  toUpper("color_armazon"),
-    calibre:        toUpper("calibre"),
-    color_cristal:  toUpper("color_cristal"),
-    familia:        familiaVal,                          // 'SOL' o 'RECETA'
-    precio:         document.getElementById("precio").value, // se guardará en el encabezado PRECIO PUBLICO (columna J)
-    fecha_ingreso:  new Date().toLocaleDateString("es-AR"),  // se guardará donde esté FECHA INGRESO (columna M)
-    // costo:          document.getElementById("costo").value, // ❌ no se envía para no escribir I
-    codigo_barras:  toUpper("codigo_barras"),
-    observaciones:  toUpper("observaciones"),
-    fabrica:        fabricaVal
-  });
+const params = new URLSearchParams({
+  action:        'guardar_anteojo',
+  n_anteojo,
+  marca,
+  modelo,
+  codigo_color:   toUpper("codigo_color"),
+  color_armazon:  toUpper("color_armazon"),
+  calibre:        toUpper("calibre"),
+  color_cristal:  toUpper("color_cristal"),
+  familia:        document.getElementById("familia").value,
+  // precio:      (NO enviar)  ❌
+  fecha_ingreso:  new Date().toLocaleDateString("es-AR"),
+  costo:          document.getElementById("costo").value,   // ✅ enviar
+  codigo_barras:  toUpper("codigo_barras"),
+  observaciones:  toUpper("observaciones"),
+  fabrica:        toUpper("fabrica")
+});
+
 
   try {
     if (btn()) btn().disabled = true;
