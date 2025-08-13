@@ -162,9 +162,13 @@ async function guardar() {
   const fabricaVal = toUpper("fabrica");
   if (fabricaVal) localStorage.setItem(LS_FABRICA_KEY, fabricaVal);
 
-  // ⚠ Orden corregido: fecha_ingreso ANTES que costo
-  // y FABRICA al final (nueva última columna)
+  // 📌 Importante:
+  // - Enviamos action=guardar_anteojo (nuevo handler en Apps Script).
+  // - NO enviamos "costo" (así no se escribe la columna I).
+  // - "fecha_ingreso" la mandamos normal; el backend la escribirá en el encabezado FECHA INGRESO,
+  //   que vos ya moviste a la columna M.
   const params = new URLSearchParams({
+    action:        'guardar_anteojo',
     n_anteojo,
     marca,
     modelo,
@@ -172,13 +176,13 @@ async function guardar() {
     color_armazon:  toUpper("color_armazon"),
     calibre:        toUpper("calibre"),
     color_cristal:  toUpper("color_cristal"),
-    familia:        familiaVal,
-    precio:         document.getElementById("precio").value,
-    fecha_ingreso:  new Date().toLocaleDateString("es-AR"),
-    costo:          document.getElementById("costo").value,
+    familia:        familiaVal,                          // 'SOL' o 'RECETA'
+    precio:         document.getElementById("precio").value, // se guardará en el encabezado PRECIO PUBLICO (columna J)
+    fecha_ingreso:  new Date().toLocaleDateString("es-AR"),  // se guardará donde esté FECHA INGRESO (columna M)
+    // costo:          document.getElementById("costo").value, // ❌ no se envía para no escribir I
     codigo_barras:  toUpper("codigo_barras"),
     observaciones:  toUpper("observaciones"),
-    fabrica:        fabricaVal                // <-- última posición
+    fabrica:        fabricaVal
   });
 
   try {
@@ -186,12 +190,14 @@ async function guardar() {
     const res = await fetch(`${URL}?${params.toString()}`);
     const data = await res.json();
 
-    if (data.success) {
+    // tolerante a {success:true} o {ok:true}
+    if (data.success || data.ok) {
       mostrarMensaje(`✅ Guardado correctamente: ${n_anteojo}`, "green");
       limpiarParaSiguiente();
       await setNumeroLibre();
     } else {
-      mostrarMensaje("❌ Error al guardar.", "red");
+      const errMsg = data.error || data.msg || "Error desconocido";
+      mostrarMensaje("❌ " + errMsg, "red");
     }
   } catch (error) {
     console.error(error);
