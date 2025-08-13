@@ -177,13 +177,13 @@ const params = new URLSearchParams({
   calibre:        toUpper("calibre"),
   color_cristal:  toUpper("color_cristal"),
   familia:        document.getElementById("familia").value,
-  // precio:      (NO enviar)  ❌
   fecha_ingreso:  new Date().toLocaleDateString("es-AR"),
-  costo:          document.getElementById("costo").value,   // ✅ enviar
+  costo:          document.getElementById("costo").value, // ← enviar
   codigo_barras:  toUpper("codigo_barras"),
   observaciones:  toUpper("observaciones"),
   fabrica:        toUpper("fabrica")
 });
+
 
 
   try {
