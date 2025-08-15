@@ -3,6 +3,8 @@ const URL = 'https://script.google.com/macros/s/AKfycbyZpgCOy4VFFPE_gq_jpv9Ed5Ks
 
 // Estado: carrito acumulado de artículos por ID de fila (sheet)
 const carrito = new Map();  // key = filaIndex, value = { n_ant, marca, modelo, color, armazon, calibre, fecha, vendedor, checked }
+let ultimoIdAgregado = null; // para enfocar input de vendedor
+const ventasSesion = [];     // resumen de esta sesión (solo lo que se registra ahora)
 
 // Utilidad: mensajes flotantes
 function mostrarMensaje(texto, color = "#28a745") {
@@ -28,13 +30,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Buscar al salir del input (como tenías)
+  // Buscar al salir del input
   document.getElementById("codigo").addEventListener("blur", buscarArticulo);
 
-  // Registrar con Enter desde el vendedor global (lo dejamos por compatibilidad)
+  // Registrar con Enter desde el vendedor global (compatibilidad)
   document.getElementById("vendedor").addEventListener("keydown", (e) => {
     if (e.key === "Enter") registrarVenta();
   });
+
+  // crear panel de resumen (si no existe)
+  ensureResumenPanel();
 
   actualizarTopVendedor();
   renderCarrito();
@@ -59,7 +64,7 @@ async function buscarArticulo() {
       return;
     }
 
-    // Buscar coincidencia EXACTA por N° ANT en columna 0; si no, usar el primero
+    // Coincidencia EXACTA por N° ANT (col 0); sino el primero
     let fila = data.find(r => String(r[0]).trim() === codigo) || data[0];
 
     const filaIndex = fila[8];                // id de fila en sheet (como ya usabas)
@@ -85,10 +90,11 @@ async function buscarArticulo() {
       });
     }
 
+    ultimoIdAgregado = String(filaIndex); // para enfocar el input de vendedor
     renderCarrito();
-    // limpiar input y foco
+
+    // limpiar input y foco en código para seguir buscando rápido
     document.getElementById('codigo').value = '';
-    document.getElementById('codigo').focus();
   } catch (e) {
     console.error(e);
     mostrarMensaje("Error al buscar el artículo.", "#dc3545");
@@ -154,6 +160,14 @@ function renderCarrito() {
 
   html += `</tbody></table>`;
   cont.innerHTML = html;
+
+  // Enfocar el input de vendedor del último agregado (si existe)
+  if (ultimoIdAgregado) {
+    setTimeout(() => {
+      const inputVend = cont.querySelector(`input.input-vendedor[data-id="${ultimoIdAgregado}"]`);
+      if (inputVend) inputVend.focus();
+    }, 0);
+  }
 }
 
 // helper: escapar texto
@@ -186,7 +200,6 @@ function quitarFila(id) {
 // ==== Registrar ventas seleccionadas (todas juntas) ====
 // Nota: mantiene tu esquema actual de requests: ?fila=X&vendedor=Y y espera {success:true}
 async function registrarVenta() {
-  // Si alguna fila no tiene vendedor, usamos el global (compatibilidad con tu UI)
   const vendedorGlobal = (document.getElementById('vendedor').value || '').trim().toUpperCase();
 
   // Reunir seleccionados
@@ -215,6 +228,12 @@ async function registrarVenta() {
       const json = await res.json();
       if (json && json.success) {
         exitos++;
+        // Guardar en resumen de sesión
+        ventasSesion.push({
+          n_ant: it.n_ant,
+          vendedor: vend,
+          hora: new Date()
+        });
         carrito.delete(id); // removemos del carrito al venderse
       }
     } catch (e) {
@@ -227,6 +246,7 @@ async function registrarVenta() {
     document.getElementById('vendedor').value = '';
     actualizarTopVendedor();
     renderCarrito();
+    renderResumenSesion(); // actualizar panel de resumen
   } else {
     mostrarMensaje("Hubo un error al registrar las ventas.", "#dc3545");
   }
@@ -234,7 +254,6 @@ async function registrarVenta() {
 
 // ==== Eliminar ventas seleccionadas (deshacer en la hoja) ====
 async function eliminarVenta() {
-  // Operamos sobre filas tildadas del carrito
   const seleccionados = Array.from(carrito.keys())
     .filter(id => carrito.get(id).checked);
 
@@ -254,7 +273,6 @@ async function eliminarVenta() {
       const json = await res.json();
       if (json && json.success) {
         eliminados++;
-        // después de eliminar en hoja, lo puedes quitar del carrito
         carrito.delete(id);
       }
     } catch (e) {
@@ -301,7 +319,68 @@ function actualizarTopVendedor() {
     });
 }
 
-// ==== Formatos de fecha (como ya usabas) ====
+// ==== Panel de RESUMEN DE SESIÓN ====
+function ensureResumenPanel() {
+  if (document.getElementById('resumen-sesion')) return;
+
+  const container = document.querySelector('.container') || document.body; // container existe en tu HTML
+  const panel = document.createElement('div');
+  panel.id = 'resumen-sesion';
+  panel.style.marginTop = '24px';
+  panel.style.background = '#ffffff';
+  panel.style.border = '1px solid #ccc';
+  panel.style.borderRadius = '8px';
+  panel.style.padding = '12px';
+
+  panel.innerHTML = `
+    <strong>🧾 Resumen de esta sesión</strong>
+    <div id="resumen-contenido" style="margin-top:8px; color:#555">Todavía no registraste ventas.</div>
+  `;
+  container.appendChild(panel);
+}
+
+function renderResumenSesion() {
+  const cont = document.getElementById('resumen-contenido');
+  if (!cont) return;
+
+  if (ventasSesion.length === 0) {
+    cont.innerHTML = 'Todavía no registraste ventas.';
+    return;
+  }
+
+  let html = `
+    <table style="width:100%; border-collapse:collapse">
+      <thead>
+        <tr>
+          <th style="border:1px solid #ccc; padding:6px; text-align:center">Hora</th>
+          <th style="border:1px solid #ccc; padding:6px; text-align:center">N° ANT</th>
+          <th style="border:1px solid #ccc; padding:6px; text-align:center">Vendedor</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+  for (const v of ventasSesion) {
+    html += `
+      <tr>
+        <td style="border:1px solid #ccc; padding:6px; text-align:center">${formatearHora(v.hora)}</td>
+        <td style="border:1px solid #ccc; padding:6px; text-align:center">${safe(v.n_ant)}</td>
+        <td style="border:1px solid #ccc; padding:6px; text-align:center">${safe(v.vendedor)}</td>
+      </tr>
+    `;
+  }
+  html += `</tbody></table>`;
+  cont.innerHTML = html;
+}
+
+function formatearHora(dateObj) {
+  const d = (dateObj instanceof Date) ? dateObj : new Date(dateObj);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  return `${hh}:${mm}:${ss}`;
+}
+
+// ==== Formatos de fecha ====
 function formatearFechaCorta(fecha) {
   const dia = String(fecha.getDate()).padStart(2, '0');
   const mes = String(fecha.getMonth() + 1).padStart(2, '0');
