@@ -1,4 +1,4 @@
-const URL = 'https://script.google.com/macros/s/AKfycbwTzBbMEISZjU3rvn5uEzjQN20iO-xg_EBgXbwXgQTTv-4ULYGoRCft6bWUwDcimyeUMQ/exec';
+const URL = 'https://script.google.com/macros/s/AKfycbxdpRj30XwH7OaQWum6cyv9WY9mlwHR71fg4O2HQ8K75eFtpKYKVqFpbpGst7FWbddSlA/exec';
 
 // ===== localStorage keys =====
 const LS_MARCA_KEY   = 'ultimaMarcaAnteojos';
