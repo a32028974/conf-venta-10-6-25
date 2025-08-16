@@ -28,7 +28,7 @@
 
   <div id="mensaje-flotante">Listo para cargar 👓</div>
 
-  <h1>Cargar nuevo anteojo v 1030 </h1>
+  <h1>Cargar nuevo anteojo</h1>
 
   <form id="form-anteojo" onsubmit="event.preventDefault(); guardar();">
     <label for="n_anteojo">N° anteojo</label>
@@ -76,8 +76,15 @@
       </div>
     </div>
 
-    <label for="precio">Precio público</label>
-    <input id="precio" name="precio" type="number" step="0.01" inputmode="decimal" />
+    <!-- NUEVO: modo “tengo precio” -->
+    <label>
+      <input type="checkbox" id="tengo_precio" />
+      Ingresé precio público (no tengo costo)
+    </label>
+
+    <label for="precio">Precio público (se calcula en planilla)</label>
+    <input id="precio" name="precio" type="number" step="0.01" inputmode="decimal" readonly />
+    <small class="hint">Si tildás la casilla, podés escribir un precio; la planilla inferirá el costo y <b>dejará la fórmula</b> en I.</small>
 
     <label for="codigo_barras">Código de barras</label>
     <input id="codigo_barras" name="codigo_barras" type="text" autocomplete="off" />
@@ -86,10 +93,9 @@
     <textarea id="observaciones" name="observaciones" placeholder="Notas, color especial, etc. (Shift+Enter para salto de línea)"></textarea>
 
     <button id="btn-guardar" type="submit">Guardar</button>
-    <small class="hint">Tip: también podés **apretar Enter** para guardar.</small>
+    <small class="hint">Tip: también podés <b>apretar Enter</b> para guardar.</small>
   </form>
 
-  <!-- Tu JS con Enter=guardar y persistencia de marca/familia -->
   <script src="./js/carga.js" defer></script>
 </body>
 </html>
