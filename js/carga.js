@@ -1,4 +1,4 @@
-const URL = 'https://script.google.com/macros/s/AKfycbyDqgKEUJ0cBnzBjHESPRJdK0pRDhO-btx7GXtqa5kXo93j8fVLevPeUCKs_9kI-1pLjA/exec';
+const URL = 'https://script.google.com/macros/s/AKfycbwTzBbMEISZjU3rvn5uEzjQN20iO-xg_EBgXbwXgQTTv-4ULYGoRCft6bWUwDcimyeUMQ/exec';
 
 // ===== localStorage keys =====
 const LS_MARCA_KEY   = 'ultimaMarcaAnteojos';
@@ -74,6 +74,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     fabricaEl.addEventListener('change', persistFabrica);
     fabricaEl.addEventListener('input', persistFabrica);
   }
+
+  // NUEVO: toggle “tengo precio”
+  const chk = document.getElementById('tengo_precio');
+  const precioEl = document.getElementById('precio');
+  const costoEl = document.getElementById('costo');
+
+  if (chk && precioEl && costoEl) {
+    const toggle = () => {
+      if (chk.checked) {
+        // Voy a ingresar precio, no costo
+        precioEl.readOnly = false;
+        costoEl.value = '';
+        costoEl.readOnly = true;
+      } else {
+        // Flujo normal con costo
+        precioEl.readOnly = true;
+        precioEl.value = '';
+        costoEl.readOnly = false;
+      }
+    };
+    chk.addEventListener('change', toggle);
+    toggle(); // estado inicial
+  }
 });
 
 // Enter = guardar (salvo Shift+Enter)
@@ -130,7 +153,7 @@ function limpiarParaSiguiente() {
   document.getElementById('modelo').focus();
 }
 
-// --- precio automático ---
+// --- precio automático (referencia visual) ---
 function calcularPrecio() {
   const costo = parseFloat(document.getElementById('costo').value);
   const fam = document.getElementById('familia').value;
@@ -141,11 +164,10 @@ function calcularPrecio() {
     document.getElementById('precio').value = '';
   }
 }
-window.calcularPrecio = calcularPrecio; // por si lo usás inline
+window.calcularPrecio = calcularPrecio;
 
 // --- guardar ---
 async function guardar() {
-  // tomar todo en MAYÚSCULAS (texto)
   const n_anteojo   = toUpper("n_anteojo");
   const marca       = toUpper("marca");
   const modelo      = toUpper("modelo");
@@ -155,43 +177,44 @@ async function guardar() {
     return;
   }
 
-  // persistir marca/familia/fabrica
+  // persistencias
   localStorage.setItem(LS_MARCA_KEY, marca);
   const familiaVal = document.getElementById("familia").value;
   if (familiaVal) localStorage.setItem(LS_FAMILIA_KEY, familiaVal);
   const fabricaVal = toUpper("fabrica");
   if (fabricaVal) localStorage.setItem(LS_FABRICA_KEY, fabricaVal);
 
-  // 📌 Importante:
-  // - Enviamos action=guardar_anteojo (nuevo handler en Apps Script).
-  // - NO enviamos "costo" (así no se escribe la columna I).
-  // - "fecha_ingreso" la mandamos normal; el backend la escribirá en el encabezado FECHA INGRESO,
-  //   que vos ya moviste a la columna M.
-const params = new URLSearchParams({
-  action:        'guardar_anteojo',
-  n_anteojo,
-  marca,
-  modelo,
-  codigo_color:   toUpper("codigo_color"),
-  color_armazon:  toUpper("color_armazon"),
-  calibre:        toUpper("calibre"),
-  color_cristal:  toUpper("color_cristal"),
-  familia:        document.getElementById("familia").value,
-  fecha_ingreso:  new Date().toLocaleDateString("es-AR"),
-  costo:          document.getElementById("costo").value, // ← enviar
-  codigo_barras:  toUpper("codigo_barras"),
-  observaciones:  toUpper("observaciones"),
-  fabrica:        toUpper("fabrica")
-});
+  const tengoPrecio = document.getElementById('tengo_precio')?.checked || false;
 
+  const baseParams = {
+    action:        'guardar_anteojo',
+    n_anteojo,
+    marca,
+    modelo,
+    codigo_color:   toUpper("codigo_color"),
+    color_armazon:  toUpper("color_armazon"),
+    calibre:        toUpper("calibre"),
+    color_cristal:  toUpper("color_cristal"),
+    familia:        familiaVal,
+    fecha_ingreso:  new Date().toLocaleDateString("es-AR"),
+    codigo_barras:  toUpper("codigo_barras"),
+    observaciones:  toUpper("observaciones"),
+    fabrica:        fabricaVal
+  };
 
+  const params = new URLSearchParams({
+    ...baseParams,
+    ...(tengoPrecio
+      ? { usar_precio_directo: '1', precio_publico: document.getElementById("precio").value }
+      : { costo: document.getElementById("costo").value }
+    )
+  });
 
   try {
     if (btn()) btn().disabled = true;
     const res = await fetch(`${URL}?${params.toString()}`);
     const data = await res.json();
 
-    // tolerante a {success:true} o {ok:true}
     if (data.success || data.ok) {
       mostrarMensaje(`✅ Guardado correctamente: ${n_anteojo}`, "green");
       limpiarParaSiguiente();
@@ -212,5 +235,3 @@ function mostrarMensaje(texto, color = "black") {
   msg().innerText = texto;
   msg().style.color = color;
 }
-
-window.guardar = guardar;
