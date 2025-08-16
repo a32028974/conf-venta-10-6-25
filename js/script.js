@@ -1,5 +1,5 @@
 // === Config ===
-const URL = 'https://script.google.com/macros/s/AKfycbyZpgCOy4VFFPE_gq_jpv9Ed5KsPjJqLAX-8SEohVRYl_qAm2PIpEtpAALLvRx9Bdt7Pg/exec'; // mismo que tenías
+const URL = 'https://script.google.com/macros/s/AKfycbz777LNNqDGop1P7v2ERF5MLf_tuNnl6Mlwb7LwBI9oRP_mrEYV7TPTFUXU3iSjIDwiAA/exec'; // mismo que tenías
 
 // Estado: carrito acumulado de artículos por ID de fila (sheet)
 const carrito = new Map();  // key = filaIndex, value = { n_ant, marca, modelo, color, armazon, calibre, fecha, vendedor, checked }
