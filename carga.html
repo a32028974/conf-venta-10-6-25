@@ -2,322 +2,100 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Stock anteojos</title>
-  <link rel="icon" type="image/png" href="logo_muy_chico_sinfondo.png" />
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Cargar nuevo anteojo</title>
   <style>
-    body{font-family:Arial, sans-serif;background:#f5f5f5;padding:20px;text-align:center}
-    input,button{padding:10px;margin:10px;font-size:16px}
-    #spinner{display:none;font-size:18px;color:#444;margin-top:20px}
-    table{margin:20px auto;border-collapse:collapse;width:95%;max-width:1100px;background:#fff;box-shadow:0 0 10px rgba(0,0,0,.1)}
-    th,td{padding:10px;border:1px solid #ccc}
-    th{cursor:pointer}
-    th:hover{background:#f0f0f0}
-    #resultado{display:none}
-    #ultimaActualizacion{margin-top:10px;font-size:14px;color:#666;text-align:right;padding-right:20px}
-    #tiempoBusqueda,#cantidadResultados{font-size:12px;color:#888;margin-top:5px}
-    #cantidadResultados{margin-top:10px;font-size:13px;font-weight:bold}
-    #busquedaAvanzadaLabel{font-size:14px;color:#333}
+    :root { --bg:#f5f5f5; --fg:#111; --muted:#666; --btn:#222; --btnH:#444; }
+    body{font-family:Arial, sans-serif; background:var(--bg); color:var(--fg); padding:18px; max-width:760px; margin:auto}
+    h1{font-size:1.4rem; margin:0 0 14px}
+    label{display:block; font-weight:600; margin-top:12px}
+    input, select, textarea, button{
+      width:100%; padding:10px; margin-top:6px; box-sizing:border-box; font-size:16px
+    }
+    textarea{min-height:70px; resize:vertical}
+    button{background:var(--btn); color:#fff; border:0; cursor:pointer; border-radius:6px}
+    button:hover{background:var(--btnH)}
+    small.hint{color:var(--muted)}
+    #mensaje-flotante{
+      position:sticky; top:0; padding:10px 12px; margin-bottom:10px;
+      background:#fff; border:1px solid #ddd; border-radius:6px; font-weight:600
+    }
+    .row-2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+    @media (max-width:560px){ .row-2{grid-template-columns:1fr} }
   </style>
 </head>
 <body>
 
-<h2>
-  <img src="logo_muy_chico_sinfondo.png" alt="Óptica Cristal" style="height:24px;vertical-align:middle;margin-right:8px;">
-  Número de anteojo
-</h2>
+  <div id="mensaje-flotante">Listo para cargar 👓</div>
 
-<input type="text" id="codigo" placeholder="Buscar por número o palabras clave" />
-<label id="busquedaAvanzadaLabel">
-  <input type="checkbox" id="busquedaAvanzada" />
-  Búsqueda avanzada
-</label><br>
-<button onclick="buscarAnteojo()">Buscar</button>
-<button onclick="limpiar()">Limpiar</button>
-<button onclick="actualizarStock()">Actualizar stock</button>
+  <h1>Cargar nuevo anteojo v16-8 17.55 </h1>
 
-<div id="spinner">🔍 Buscando...</div>
-<div id="cantidadResultados"></div>
+  <form id="form-anteojo" onsubmit="event.preventDefault(); guardar();">
+    <label for="n_anteojo">N° anteojo</label>
+    <input id="n_anteojo" name="n_anteojo" type="text" autocomplete="off" />
+    
+    <label for="fabrica">Fábrica</label>
+    <input id="fabrica" name="fabrica" type="text" autocomplete="off" />
 
-<div id="resultado">
-  <table>
-    <thead>
-      <tr>
-        <th></th>
-        <th onclick="ordenarPor(0)">N° ANT</th>
-        <th onclick="ordenarPor(1)">MARCA</th>
-        <th onclick="ordenarPor(2)">MODELO</th>
-        <th onclick="ordenarPor(3)">COLOR</th>
-        <th onclick="ordenarPor(4)">ARMAZÓN</th>
-        <th onclick="ordenarPor(5)">CALIBRE</th>
-        <th onclick="ordenarPor(6)">COLOR CRISTAL</th>
-        <th onclick="ordenarPor(7)">FAMILIA</th>
-        <th onclick="ordenarPor(8)">PRECIO</th>
-        <th onclick="ordenarPor(9)">FECHA DE VENTA</th>
-        <th onclick="ordenarPor(10)">VENDEDOR</th>
-        <th onclick="ordenarPor(11)">FECHA DE INGRESO</th>
-      </tr>
-    </thead>
-    <tbody id="contenido"></tbody>
-  </table>
-  <div id="tiempoBusqueda"></div>
-</div>
+    <label for="marca">Marca</label>
+    <input id="marca" name="marca" type="text" autocomplete="off" />
 
-<div id="ultimaActualizacion"></div>
+    <label for="modelo">Modelo</label>
+    <input id="modelo" name="modelo" type="text" autocomplete="off" />
 
-<script>
-/** URL de tu App Script (la NUEVA) */
-const API = 'https://script.google.com/macros/s/AKfycby6SzAgXhtctDbYEGETB6Ku8X_atugp7Mld5QvimnDpXMmHU9IxW9XRqDkRI0rGONr85Q/exec';
+    <label for="codigo_color">Código color</label>
+    <input id="codigo_color" name="codigo_color" type="text" autocomplete="off" />
 
-/** Claves “lógicas” en el orden visual de la tabla */
-const UI_KEYS = [
-  'N ANTEOJO',
-  'MARCA',
-  'MODELO',
-  'COLOR',
-  'ARMAZON',
-  'CALIBRE',
-  'CRISTAL',
-  'FAMILIA',
-  'PRECIO PUBLICO',
-  'FECHA DE VENTA',
-  'VENDEDOR',
-  'FECHA INGRESO'
-];
+    <div class="row-2">
+      <div>
+        <label for="color_armazon">Color armazón</label>
+        <input id="color_armazon" name="color_armazon" type="text" autocomplete="off" />
+      </div>
+      <div>
+        <label for="calibre">Calibre</label>
+        <input id="calibre" name="calibre" type="text" autocomplete="off" />
+      </div>
+    </div>
 
-let stockLocal = [];      // objetos por encabezado
-let ordenAsc = true;
-let RESOLVE = k => k;     // resolverá el nombre real de cada encabezado
+    <label for="color_cristal">Color cristal</label>
+    <input id="color_cristal" name="color_cristal" type="text" autocomplete="off" />
 
-/* ---------- Helpers de normalización y resolución ---------- */
-const norm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-                   .replace(/\s+/g,' ').trim().toUpperCase();
-const digits = v => String(v ?? '').replace(/\D+/g,'');
+    <div class="row-2">
+      <div>
+        <label for="familia">Familia</label>
+        <select id="familia" name="familia" onchange="calcularPrecio()">
+          <option value="">-- Seleccionar --</option>
+          <option value="SOL">SOL</option>
+          <option value="RECETA">RECETA</option>
+        </select>
+        <small class="hint">SOL ×2.42 · RECETA ×3.63</small>
+      </div>
+      <div>
+        <label for="costo">Costo</label>
+        <input id="costo" name="costo" type="number" step="0.01" inputmode="decimal" oninput="calcularPrecio()" />
+      </div>
+    </div>
 
-/** Construye un resolvedor de nombres a partir de las claves reales que devuelve el backend */
-function buildResolver(rows){
-  const map = {};
-  if (!rows || !rows.length) return k => k;
+    <!-- NUEVO: modo “tengo precio” -->
+    <label>
+      <input type="checkbox" id="tengo_precio" />
+      Ingresé precio público (no tengo costo)
+    </label>
 
-  // indexo TODAS las claves presentes
-  Object.keys(rows[0]).forEach(k => map[norm(k)] = k);
+    <label for="precio">Precio público (se calcula en planilla)</label>
+    <input id="precio" name="precio" type="number" step="0.01" inputmode="decimal" readonly />
+    <small class="hint">Si tildás la casilla, podés escribir un precio; la planilla inferirá el costo y <b>dejará la fórmula</b> en I.</small>
 
-  // sinónimos/fallbacks comunes
-  const SYN = {
-    'N ANTEOJO': ['N° ANTEOJO','N ANT','N° ANT','NUMERO ANTEOJO','NÚMERO ANTEOJO'],
-    'ARMAZON'  : ['ARMAZÓN'],
-    'PRECIO PUBLICO': ['PRECIO PÚBLICO','PRECIO'],
-    'FABRICA'  : ['FÁBRICA']
-  };
+    <label for="codigo_barras">Código de barras</label>
+    <input id="codigo_barras" name="codigo_barras" type="text" autocomplete="off" />
 
-  return function resolve(keyWanted){
-    const kN = norm(keyWanted);
-    if (map[kN]) return map[kN];
-    // pruebo sinónimos
-    if (SYN[keyWanted]) {
-      for (const alt of SYN[keyWanted]) {
-        const n = norm(alt);
-        if (map[n]) return map[n];
-      }
-    }
-    return keyWanted; // última chance
-  };
-}
+    <label for="observaciones">Observaciones</label>
+    <textarea id="observaciones" name="observaciones" placeholder="Notas, color especial, etc. (Shift+Enter para salto de línea)"></textarea>
 
-/* -------------------- API -------------------- */
-async function actualizarStock() {
-  document.getElementById('spinner').style.display = 'block';
-  try {
-    const res = await fetch(`${API}?todos=true`);
-    const data = await res.json().catch(()=>null);
+    <button id="btn-guardar" type="submit">Guardar</button>
+    <small class="hint">Tip: también podés <b>apretar Enter</b> para guardar.</small>
+  </form>
 
-    const rows = (data && Array.isArray(data.rows)) ? data.rows
-               : (Array.isArray(data) ? data : null);
-    if (!rows) {
-      console.error('Respuesta inesperada de ?todos=true:', data);
-      Swal.fire("⚠ No se pudo actualizar el stock");
-      return;
-    }
-
-    stockLocal = rows;
-    RESOLVE = buildResolver(rows);  // <<< clave: resolutor según encabezados reales
-
-    localStorage.setItem('stock', JSON.stringify(stockLocal));
-    const fecha = (data && data.updatedAt) || new Date().toLocaleString();
-    localStorage.setItem('ultimaActualizacion', fecha);
-    document.getElementById('ultimaActualizacion').textContent = "Base de datos actualizada: " + fecha;
-
-    Swal.fire({ icon:'success', title:'Stock actualizado', showConfirmButton:false, timer:1000 });
-  } catch (e) {
-    console.error(e);
-    Swal.fire("❌ Error al actualizar el stock");
-  } finally {
-    document.getElementById('spinner').style.display = 'none';
-  }
-}
-
-/* -------------------- Render -------------------- */
-function renderTabla(rows) {
-  const tbody = document.getElementById('contenido');
-  tbody.innerHTML = '';
-
-  // Resuelvo claves reales una vez
-  const REAL_KEYS = UI_KEYS.map(k => RESOLVE(k));
-
-  rows.forEach(r => {
-    const tr = document.createElement('tr');
-
-    // checkbox
-    const tdCheck = document.createElement('td');
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.checked = true;
-    cb.dataset.id = String(r[RESOLVE('N ANTEOJO')] ?? '').trim();
-    tdCheck.appendChild(cb);
-    tr.appendChild(tdCheck);
-
-    // columnas UI en orden, leyendo con la clave REAL mapeada
-    REAL_KEYS.forEach((realKey, idx) => {
-      const td = document.createElement('td');
-      const val = r[realKey];
-      td.textContent = (val === '' || val == null) ? '-' : String(val);
-      tr.appendChild(td);
-    });
-
-    tbody.appendChild(tr);
-  });
-
-  document.getElementById('resultado').style.display = 'block';
-}
-
-/* -------------------- Ordenar -------------------- */
-function ordenarPor(indiceVisual) {
-  const tbody = document.getElementById('contenido');
-  const filas = Array.from(tbody.querySelectorAll('tr'));
-
-  filas.sort((a, b) => {
-    const A = a.children[indiceVisual + 1].textContent.trim();
-    const B = b.children[indiceVisual + 1].textContent.trim();
-    const nA = Number(A.replace(/[^0-9.-]/g, ''));
-    const nB = Number(B.replace(/[^0-9.-]/g, ''));
-    if (!isNaN(nA) && !isNaN(nB)) return ordenAsc ? nA - nB : nB - nA;
-    return ordenAsc ? A.localeCompare(B) : B.localeCompare(A);
-  });
-
-  ordenAsc = !ordenAsc;
-  filas.forEach(f => tbody.appendChild(f));
-}
-
-/* -------------------- Buscar -------------------- */
-async function buscarAnteojo() {
-  const input = document.getElementById('codigo');
-  const codigo = String(input.value || '').trim();
-  const avanzada = document.getElementById('busquedaAvanzada').checked;
-  const inicio = performance.now();
-
-  document.getElementById('spinner').style.display = 'block';
-  document.getElementById('tiempoBusqueda').textContent = '';
-  document.getElementById('cantidadResultados').textContent = '';
-
-  if (!codigo) {
-    Swal.fire("Ingresá un número o palabras clave");
-    document.getElementById('spinner').style.display = 'none';
-    return;
-  }
-
-  let resultados = [];
-  const keyN = RESOLVE('N ANTEOJO');
-
-  // 1) local por número exacto
-  if (!avanzada && /^\d+$/.test(codigo) && stockLocal.length && keyN) {
-    resultados = stockLocal.filter(r => digits(r[keyN]) === codigo);
-  }
-
-  // 2) si no hay, backend (filtrado por n)
-  if (resultados.length === 0) {
-    try {
-      if (!avanzada && /^\d+$/.test(codigo)) {
-        const res = await fetch(`${API}?todos=true&n=${encodeURIComponent(codigo)}`);
-        const data = await res.json();
-        const rows = (data && Array.isArray(data.rows)) ? data.rows
-                   : (Array.isArray(data) ? data : []);
-        if (rows.length) {
-          if (!stockLocal.length) { stockLocal = rows; RESOLVE = buildResolver(rows); }
-          resultados = rows;
-        }
-      } else {
-        // Avanzada: bajo (o uso) todo y filtro por texto
-        if (stockLocal.length === 0) {
-          const res = await fetch(`${API}?todos=true`);
-          const data = await res.json();
-          const rows = (data && Array.isArray(data.rows)) ? data.rows
-                     : (Array.isArray(data) ? data : []);
-          stockLocal = rows;
-          RESOLVE = buildResolver(rows);
-        }
-        const q = codigo.toLowerCase();
-        const campos = ['N ANTEOJO','MARCA','MODELO','COLOR','ARMAZON','CRISTAL','FAMILIA','VENDEDOR','CODIGO DE BARRAS','OBSERVACIONES','FÁBRICA']
-                       .map(k => RESOLVE(k));
-        resultados = stockLocal.filter(r =>
-          campos.some(k => String(r[k] ?? '').toLowerCase().includes(q))
-        );
-      }
-    } catch (err) { console.error(err); }
-  }
-
-  if (resultados.length === 0) {
-    document.getElementById('resultado').style.display = 'none';
-    document.getElementById('cantidadResultados').textContent = 'No se encontraron resultados.';
-    document.getElementById('spinner').style.display = 'none';
-    return;
-  }
-
-  renderTabla(resultados);
-  document.getElementById('cantidadResultados').textContent = `🔎 Se encontraron ${resultados.length} resultado(s).`;
-
-  document.getElementById('spinner').style.display = 'none';
-  const tiempo = (performance.now() - inicio).toFixed(2);
-  document.getElementById('tiempoBusqueda').textContent = `⏱ Tiempo de búsqueda: ${tiempo} ms`;
-}
-
-/* -------------------- Limpiar e init -------------------- */
-function limpiar() {
-  document.getElementById('codigo').value = '';
-  document.getElementById('contenido').innerHTML = '';
-  document.getElementById('resultado').style.display = 'none';
-  document.getElementById('spinner').style.display = 'none';
-  document.getElementById('tiempoBusqueda').textContent = '';
-  document.getElementById('cantidadResultados').textContent = '';
-  document.getElementById('codigo').focus();
-}
-
-window.onload = () => {
-  document.getElementById('codigo').focus();
-
-  const ultima = localStorage.getItem('ultimaActualizacion');
-  if (ultima) document.getElementById('ultimaActualizacion').textContent = 'Base de datos actualizada: ' + ultima;
-
-  const cache = localStorage.getItem('stock');
-  if (cache) { try { stockLocal = JSON.parse(cache); RESOLVE = buildResolver(stockLocal); } catch {} }
-
-  document.getElementById('codigo').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); buscarAnteojo(); }
-  });
-};
-
-/** Auto-actualización diaria (09:05) */
-setInterval(() => {
-  const ahora = new Date();
-  if (ahora.getHours() === 9 && ahora.getMinutes() === 5 && ahora.getSeconds() < 10 && !sessionStorage.getItem('stockActualizadoHoy')) {
-    actualizarStock().then(() => {
-      const ts = new Date().toLocaleString();
-      document.getElementById('ultimaActualizacion').textContent = '🔄 Stock actualizado automáticamente: ' + ts;
-      sessionStorage.setItem('stockActualizadoHoy', 'true');
-    });
-  }
-}, 10000);
-</script>
-
+  <script src="./js/carga.js" defer></script>
 </body>
 </html>
