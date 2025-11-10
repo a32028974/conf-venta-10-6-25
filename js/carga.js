@@ -1,6 +1,6 @@
 /* ====== CONFIG ====== */
 // Pegá 1 sola vez tu URL /exec en la caja (o hardcodeala acá).
-const API_FALLBACK = 'https://script.google.com/macros/s/AKfycby6A1qxDH2xlPSlqSqAqWtFhQ-eem87YxQTDKX-PY38bB1JmIe8vqsUVeZSqAEOD0lxbA/exec'; // ej: 'https://script.google.com/macros/s/AKfycb.../exec'
+const API_FALLBACK = 'https://script.google.com/macros/s/AKfycbxVj1eryyemrFtnRkery0nm5cpWgUd0WxEuCsGsAg2V7ra8VYg3-_dh-3ljXb-bVVeK1g/exec'; // ej: 'https://script.google.com/macros/s/AKfycb.../exec'
 const API = (localStorage.getItem('OC_API') || API_FALLBACK).trim();
 
 /* ====== HELPERS ====== */
