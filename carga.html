@@ -92,110 +92,96 @@
 
 <script>
 /* ====== CONFIG ====== */
-/* Usa la guardada en localStorage si existe; si no, usa esta por defecto */
-const API = (localStorage.getItem('OC_API') || 'https://script.google.com/macros/s/AKfycbxVj1eryyemrFtnRkery0nm5cpWgUd0WxEuCsGsAg2V7ra8VYg3-_dh-3ljXb-bVVeK1g/exec').trim();
+const API = 'https://script.google.com/macros/s/AKfycbwD8HyjyM_biqlm3Mvxn0IjFyfx7JVYnkkLLPN24uMrSkfa3NUhtju2JSC4BZcTKUVCtg/exec';
 
 /* ====== HELPERS ====== */
-const $ = s => document.querySelector(s);
 const byId = id => document.getElementById(id);
+function msg(t, ok=true){ const b=byId('mensaje-flotante'); b.textContent=t; b.style.color=ok?'#111':'#b00020'; }
+function toNum(v){ const n=parseFloat((v??'').toString().replace(',','.')); return isNaN(n)?'':+n.toFixed(2); }
+function factor(f){ f=(f||'').toUpperCase(); if(f==='RECETA')return 3.63; if(f==='SOL')return 2.42; return null; }
+function qs(obj){ return Object.entries(obj).map(([k,v])=>`${encodeURIComponent(k)}=${encodeURIComponent(v==null?'':v)}`).join('&'); }
 
-function msg(txt, ok=true){
-  const box = byId('mensaje-flotante');
-  box.textContent = txt;
-  box.style.color = ok ? '#111' : '#b00020';
+/* ====== JSONP loader ====== */
+function jsonp(url){
+  return new Promise((resolve,reject)=>{
+    const cb = 'cb_' + Math.random().toString(36).slice(2);
+    window[cb] = data => { resolve(data); delete window[cb]; s.remove(); };
+    const s = document.createElement('script');
+    s.src = url + (url.includes('?')?'&':'?') + 'callback=' + cb;
+    s.onerror = ()=>{ delete window[cb]; s.remove(); reject(new Error('JSONP error')); };
+    document.head.appendChild(s);
+  });
 }
 
-function toNumber(v){
-  const n = parseFloat((v??'').toString().replace(',','.'));
-  return isNaN(n) ? '' : +n.toFixed(2);
-}
-function factorFamilia(f){ const F=(f||'').toUpperCase(); if(F==='RECETA')return 3.63; if(F==='SOL')return 2.42; return null; }
-
-/* ====== PRECIO <-> COSTO ====== */
+/* ====== Precio <-> Costo ====== */
 function recalcular(){
   const tengo = byId('tengo_precio').checked;
-  const fam   = byId('familia').value;
-  const k     = factorFamilia(fam);
-
+  const fam = byId('familia').value;
+  const k = factor(fam);
   byId('precio').readOnly = !tengo;
   byId('costo').readOnly  =  tengo;
 
-  const costo  = toNumber(byId('costo').value);
-  const precio = toNumber(byId('precio').value);
+  const costo  = toNum(byId('costo').value);
+  const precio = toNum(byId('precio').value);
   if (!k) return;
-
   if (tengo) {
     if (precio !== '') byId('costo').value = (precio / k).toFixed(2);
   } else {
-    if (costo  !== '') byId('precio').value = (costo  * k).toFixed(2);
+    if (costo  !== '') byId('precio').value = (costo * k).toFixed(2);
   }
 }
 
-/* ====== API: Próximo número ====== */
+/* ====== API ====== */
 async function cargarNumeroSiguiente(){
   try{
-    const r = await fetch(API + '?action=nextNumero', {cache:'no-store'});
-    const txt = await r.text();
-    let js;
-    try { js = JSON.parse(txt); } catch { js = { ok:false, error: txt }; }
-    if (js.ok) {
-      byId('n_anteojo').value = js.numero;
+    const data = await jsonp(API + '?action=nextNumero');
+    if (data.ok){
+      byId('n_anteojo').value = data.numero;
       msg('Listo para cargar 👓');
     } else {
-      msg(js.error || 'No pude obtener el número', false);
+      msg(data.error || 'No pude obtener el número', false);
     }
   }catch(e){
-    console.error(e);
-    msg('Error de red obteniendo número', false);
+    console.error(e); msg('Error de red obteniendo número', false);
   }
 }
 
-/* ====== API: Guardar ====== */
 async function guardar(){
+  // datos
   const payload = {
-    n_anteojo      : byId('n_anteojo').value.trim(),   // el backend igual usa max+1
-    fabrica        : byId('fabrica').value.trim(),
-    marca          : byId('marca').value.trim(),
-    modelo         : byId('modelo').value.trim(),
-    codigo_color   : byId('codigo_color').value.trim(),
-    color_armazon  : byId('color_armazon').value.trim(),
-    calibre        : byId('calibre').value.trim(),
-    color_cristal  : byId('color_cristal').value.trim(),
-    familia        : byId('familia').value.trim(),
-    costo          : byId('costo').value,
-    tengo_precio   : byId('tengo_precio').checked,
-    precio         : byId('precio').value,
-    codigo_barras  : byId('codigo_barras').value.trim(),
-    observaciones  : byId('observaciones').value.trim(),
+    fabrica: byId('fabrica').value.trim(),
+    marca: byId('marca').value.trim(),
+    modelo: byId('modelo').value.trim(),
+    codigo_color: byId('codigo_color').value.trim(),
+    color_armazon: byId('color_armazon').value.trim(),
+    calibre: byId('calibre').value.trim(),
+    color_cristal: byId('color_cristal').value.trim(),
+    familia: byId('familia').value.trim(),
+    costo: byId('costo').value,
+    tengo_precio: byId('tengo_precio').checked ? 'true' : 'false',
+    precio: byId('precio').value,
+    codigo_barras: byId('codigo_barras').value.trim(),
+    observaciones: byId('observaciones').value.trim(),
   };
 
-  if (!payload.familia) { msg('Elegí una Familia (SOL / RECETA)', false); byId('familia').focus(); return; }
-
-  // Guardar preferencias útiles
-  localStorage.setItem('OC_PREF_MARCA', payload.marca || '');
-  localStorage.setItem('OC_PREF_FAMILIA', payload.familia || '');
+  if (!payload.familia){ msg('Elegí una Familia (SOL / RECETA)', false); byId('familia').focus(); return; }
 
   byId('btn-guardar').disabled = true; msg('Guardando…');
   try{
-    const r = await fetch(API + '?action=guardar', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(payload)
-    });
-    const js = await r.json();
-    if (js.ok){
-      msg(`Guardado ✔ N° ${js.numero}`);
-      // limpiar campos “de detalle”
+    const url = API + '?action=guardar&' + qs(payload);
+    const data = await jsonp(url);
+    if (data.ok){
+      msg(`Guardado ✔ N° ${data.numero}`);
+      // limpiar detalle
       ['modelo','codigo_color','color_armazon','calibre','color_cristal','costo','precio','codigo_barras','observaciones'].forEach(id=>byId(id).value='');
       byId('tengo_precio').checked = false;
       await cargarNumeroSiguiente();
       byId('modelo').focus();
-    } else {
-      msg(js.error || 'No se pudo guardar', false);
+    }else{
+      msg(data.error || 'No se pudo guardar', false);
     }
   }catch(e){
-    console.error(e);
-    msg('Error de red al guardar', false);
+    console.error(e); msg('Error de red al guardar', false);
   }finally{
     byId('btn-guardar').disabled = false;
   }
@@ -203,23 +189,10 @@ async function guardar(){
 
 /* ====== INIT ====== */
 function init(){
-  // Prefills
-  const prefMarca   = localStorage.getItem('OC_PREF_MARCA') || '';
-  const prefFamilia = localStorage.getItem('OC_PREF_FAMILIA') || '';
-  if (prefMarca) byId('marca').value = prefMarca;
-  if (prefFamilia) byId('familia').value = prefFamilia;
-
-  // Listeners
   byId('tengo_precio').addEventListener('change',recalcular);
   byId('familia').addEventListener('change',recalcular);
   byId('costo').addEventListener('input',recalcular);
   byId('precio').addEventListener('input',recalcular);
-
-  // Enter para guardar
-  byId('form-anteojo').addEventListener('keydown', (e)=>{
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); guardar(); }
-  });
-
   cargarNumeroSiguiente();
   byId('marca').focus();
 }
