@@ -9,17 +9,12 @@
     body{font-family:Arial, sans-serif; background:var(--bg); color:var(--fg); padding:18px; max-width:760px; margin:auto}
     h1{font-size:1.4rem; margin:0 0 14px}
     label{display:block; font-weight:600; margin-top:12px}
-    input, select, textarea, button{
-      width:100%; padding:10px; margin-top:6px; box-sizing:border-box; font-size:16px
-    }
+    input, select, textarea, button{ width:100%; padding:10px; margin-top:6px; box-sizing:border-box; font-size:16px }
     textarea{min-height:70px; resize:vertical}
     button{background:var(--btn); color:#fff; border:0; cursor:pointer; border-radius:6px}
     button:hover{background:var(--btnH)}
     small.hint{color:var(--muted)}
-    #mensaje-flotante{
-      position:sticky; top:0; padding:10px 12px; margin-bottom:10px;
-      background:#fff; border:1px solid #ddd; border-radius:6px; font-weight:600
-    }
+    #mensaje-flotante{ position:sticky; top:0; padding:10px 12px; margin-bottom:10px; background:#fff; border:1px solid #ddd; border-radius:6px; font-weight:600 }
     .row-2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
     @media (max-width:560px){ .row-2{grid-template-columns:1fr} }
   </style>
@@ -33,7 +28,7 @@
   <form id="form-anteojo" onsubmit="event.preventDefault(); guardar();">
     <label for="n_anteojo">N° anteojo</label>
     <input id="n_anteojo" name="n_anteojo" type="text" autocomplete="off" />
-    
+
     <label for="fabrica">Fábrica</label>
     <input id="fabrica" name="fabrica" type="text" autocomplete="off" />
 
@@ -63,7 +58,7 @@
     <div class="row-2">
       <div>
         <label for="familia">Familia</label>
-        <select id="familia" name="familia" onchange="calcularPrecio()">
+        <select id="familia" name="familia">
           <option value="">-- Seleccionar --</option>
           <option value="SOL">SOL</option>
           <option value="RECETA">RECETA</option>
@@ -72,11 +67,10 @@
       </div>
       <div>
         <label for="costo">Costo</label>
-        <input id="costo" name="costo" type="number" step="0.01" inputmode="decimal" oninput="calcularPrecio()" />
+        <input id="costo" name="costo" type="number" step="0.01" inputmode="decimal" />
       </div>
     </div>
 
-    <!-- NUEVO: modo “tengo precio” -->
     <label>
       <input type="checkbox" id="tengo_precio" />
       Ingresé precio público (no tengo costo)
@@ -84,7 +78,7 @@
 
     <label for="precio">Precio público (se calcula en planilla)</label>
     <input id="precio" name="precio" type="number" step="0.01" inputmode="decimal" readonly />
-    <small class="hint">Si tildás la casilla, podés escribir un precio; la planilla inferirá el costo y <b>dejará la fórmula</b> en I.</small>
+    <small class="hint">Si tildás la casilla, podés escribir un precio; el sistema infiere el costo.</small>
 
     <label for="codigo_barras">Código de barras</label>
     <input id="codigo_barras" name="codigo_barras" type="text" autocomplete="off" />
@@ -96,6 +90,141 @@
     <small class="hint">Tip: también podés <b>apretar Enter</b> para guardar.</small>
   </form>
 
-  <script src="./js/carga.js" defer></script>
+<script>
+/* ====== CONFIG ====== */
+/* Usa la guardada en localStorage si existe; si no, usa esta por defecto */
+const API = (localStorage.getItem('OC_API') || 'https://script.google.com/macros/s/AKfycbxVj1eryyemrFtnRkery0nm5cpWgUd0WxEuCsGsAg2V7ra8VYg3-_dh-3ljXb-bVVeK1g/exec').trim();
+
+/* ====== HELPERS ====== */
+const $ = s => document.querySelector(s);
+const byId = id => document.getElementById(id);
+
+function msg(txt, ok=true){
+  const box = byId('mensaje-flotante');
+  box.textContent = txt;
+  box.style.color = ok ? '#111' : '#b00020';
+}
+
+function toNumber(v){
+  const n = parseFloat((v??'').toString().replace(',','.'));
+  return isNaN(n) ? '' : +n.toFixed(2);
+}
+function factorFamilia(f){ const F=(f||'').toUpperCase(); if(F==='RECETA')return 3.63; if(F==='SOL')return 2.42; return null; }
+
+/* ====== PRECIO <-> COSTO ====== */
+function recalcular(){
+  const tengo = byId('tengo_precio').checked;
+  const fam   = byId('familia').value;
+  const k     = factorFamilia(fam);
+
+  byId('precio').readOnly = !tengo;
+  byId('costo').readOnly  =  tengo;
+
+  const costo  = toNumber(byId('costo').value);
+  const precio = toNumber(byId('precio').value);
+  if (!k) return;
+
+  if (tengo) {
+    if (precio !== '') byId('costo').value = (precio / k).toFixed(2);
+  } else {
+    if (costo  !== '') byId('precio').value = (costo  * k).toFixed(2);
+  }
+}
+
+/* ====== API: Próximo número ====== */
+async function cargarNumeroSiguiente(){
+  try{
+    const r = await fetch(API + '?action=nextNumero', {cache:'no-store'});
+    const txt = await r.text();
+    let js;
+    try { js = JSON.parse(txt); } catch { js = { ok:false, error: txt }; }
+    if (js.ok) {
+      byId('n_anteojo').value = js.numero;
+      msg('Listo para cargar 👓');
+    } else {
+      msg(js.error || 'No pude obtener el número', false);
+    }
+  }catch(e){
+    console.error(e);
+    msg('Error de red obteniendo número', false);
+  }
+}
+
+/* ====== API: Guardar ====== */
+async function guardar(){
+  const payload = {
+    n_anteojo      : byId('n_anteojo').value.trim(),   // el backend igual usa max+1
+    fabrica        : byId('fabrica').value.trim(),
+    marca          : byId('marca').value.trim(),
+    modelo         : byId('modelo').value.trim(),
+    codigo_color   : byId('codigo_color').value.trim(),
+    color_armazon  : byId('color_armazon').value.trim(),
+    calibre        : byId('calibre').value.trim(),
+    color_cristal  : byId('color_cristal').value.trim(),
+    familia        : byId('familia').value.trim(),
+    costo          : byId('costo').value,
+    tengo_precio   : byId('tengo_precio').checked,
+    precio         : byId('precio').value,
+    codigo_barras  : byId('codigo_barras').value.trim(),
+    observaciones  : byId('observaciones').value.trim(),
+  };
+
+  if (!payload.familia) { msg('Elegí una Familia (SOL / RECETA)', false); byId('familia').focus(); return; }
+
+  // Guardar preferencias útiles
+  localStorage.setItem('OC_PREF_MARCA', payload.marca || '');
+  localStorage.setItem('OC_PREF_FAMILIA', payload.familia || '');
+
+  byId('btn-guardar').disabled = true; msg('Guardando…');
+  try{
+    const r = await fetch(API + '?action=guardar', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const js = await r.json();
+    if (js.ok){
+      msg(`Guardado ✔ N° ${js.numero}`);
+      // limpiar campos “de detalle”
+      ['modelo','codigo_color','color_armazon','calibre','color_cristal','costo','precio','codigo_barras','observaciones'].forEach(id=>byId(id).value='');
+      byId('tengo_precio').checked = false;
+      await cargarNumeroSiguiente();
+      byId('modelo').focus();
+    } else {
+      msg(js.error || 'No se pudo guardar', false);
+    }
+  }catch(e){
+    console.error(e);
+    msg('Error de red al guardar', false);
+  }finally{
+    byId('btn-guardar').disabled = false;
+  }
+}
+
+/* ====== INIT ====== */
+function init(){
+  // Prefills
+  const prefMarca   = localStorage.getItem('OC_PREF_MARCA') || '';
+  const prefFamilia = localStorage.getItem('OC_PREF_FAMILIA') || '';
+  if (prefMarca) byId('marca').value = prefMarca;
+  if (prefFamilia) byId('familia').value = prefFamilia;
+
+  // Listeners
+  byId('tengo_precio').addEventListener('change',recalcular);
+  byId('familia').addEventListener('change',recalcular);
+  byId('costo').addEventListener('input',recalcular);
+  byId('precio').addEventListener('input',recalcular);
+
+  // Enter para guardar
+  byId('form-anteojo').addEventListener('keydown', (e)=>{
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); guardar(); }
+  });
+
+  cargarNumeroSiguiente();
+  byId('marca').focus();
+}
+window.addEventListener('DOMContentLoaded', init);
+</script>
+
 </body>
 </html>
