@@ -1,237 +1,166 @@
-const URL = 'https://script.google.com/macros/s/AKfycbzUqwyTA2xZkffjLeX_PWJswYcxSMASQZt8fn5sQ7nl6FF1nWyZZssv01xGEDrgUlsj/exec';
+/* ====== CONFIG ====== */
+// Pegá 1 sola vez tu URL /exec en la caja (o hardcodeala acá).
+const API_FALLBACK = 'https://script.google.com/macros/s/AKfycby6A1qxDH2xlPSlqSqAqWtFhQ-eem87YxQTDKX-PY38bB1JmIe8vqsUVeZSqAEOD0lxbA/exec'; // ej: 'https://script.google.com/macros/s/AKfycb.../exec'
+const API = (localStorage.getItem('OC_API') || API_FALLBACK).trim();
 
-// ===== localStorage keys =====
-const LS_MARCA_KEY   = 'ultimaMarcaAnteojos';
-const LS_FAMILIA_KEY = 'ultimaFamiliaAnteojos';
-const LS_FABRICA_KEY = 'ultimaFabricaAnteojos';
+/* ====== HELPERS ====== */
+const $ = s => document.querySelector(s);
+const byId = id => document.getElementById(id);
 
-const msg = () => document.getElementById("mensaje-flotante");
-const btn = () => document.getElementById("btn-guardar");
-
-// --- helpers mayúsculas ---
-function toUpper(id) {
-  const el = document.getElementById(id);
-  return (el?.value || '').trim().toUpperCase();
+function msg(txt, ok=true) {
+  const box = byId('mensaje-flotante');
+  box.textContent = txt;
+  box.style.color = ok ? '#111' : '#b00020';
 }
-function bindLiveUppercase(ids) {
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener('input', () => {
-      const s = el.selectionStart, e = el.selectionEnd;
-      el.value = el.value.toUpperCase();
-      if (s != null && e != null) el.setSelectionRange(s, e);
+
+function toNumber(v){
+  const n = parseFloat((v??'').toString().replace(',','.'));
+  return isNaN(n) ? '' : +n.toFixed(2);
+}
+
+function getFactor(fam){
+  const F = (fam||'').toUpperCase();
+  if (F === 'RECETA') return 3.63;
+  if (F === 'SOL')    return 2.42;
+  return null;
+}
+
+/* ====== PRECIO <-> COSTO ====== */
+function calcularPrecio(){
+  const tengo = byId('tengo_precio').checked;
+  const fam   = byId('familia').value;
+  const k     = getFactor(fam);
+
+  // Toggle de readonly/disabled
+  byId('precio').readOnly = !tengo;
+  byId('costo').readOnly  =  tengo;
+
+  const costo  = toNumber(byId('costo').value);
+  const precio = toNumber(byId('precio').value);
+
+  if (!k) return; // sin familia no calculamos
+
+  if (tengo) {
+    // Tengo precio -> inferir costo
+    if (precio !== '') {
+      byId('costo').value = (precio / k).toFixed(2);
+    }
+  } else {
+    // Tengo costo -> calcular precio
+    if (costo !== '') {
+      byId('precio').value = (costo * k).toFixed(2);
+    }
+  }
+}
+
+/* ====== CARGAR NÚMERO SIGUIENTE ====== */
+async function cargarNumeroSiguiente() {
+  if (!API) {
+    msg('Pegar URL de Apps Script (OC_API) faltante', false);
+    return;
+  }
+  try {
+    const r  = await fetch(`${API}?action=nextNumero`, { cache:'no-store' });
+    const js = await r.json();
+    if (js.ok) {
+      byId('n_anteojo').value = js.numero;
+      msg('Listo para cargar 👓');
+    } else {
+      msg(js.error || 'No pude obtener el número', false);
+    }
+  } catch (err) {
+    console.error(err);
+    msg('Error de red obteniendo número', false);
+  }
+}
+
+/* ====== GUARDAR ====== */
+async function guardar(){
+  if (!API) { msg('Falta configurar la URL del Script', false); return; }
+
+  const payload = {
+    n_anteojo      : byId('n_anteojo').value.trim(), // el backend igual usa max+1
+    fabrica        : byId('fabrica').value.trim(),
+    marca          : byId('marca').value.trim(),
+    modelo         : byId('modelo').value.trim(),
+    codigo_color   : byId('codigo_color').value.trim(),
+    color_armazon  : byId('color_armazon').value.trim(),
+    calibre        : byId('calibre').value.trim(),
+    color_cristal  : byId('color_cristal').value.trim(),
+    familia        : byId('familia').value.trim(),
+    costo          : byId('costo').value,
+    tengo_precio   : byId('tengo_precio').checked,
+    precio         : byId('precio').value,
+    codigo_barras  : byId('codigo_barras').value.trim(),
+    observaciones  : byId('observaciones').value.trim(),
+  };
+
+  // Validito mínimo
+  if (!payload.familia) { msg('Elegí una Familia (SOL / RECETA)', false); byId('familia').focus(); return; }
+
+  // Guardar defaults útiles
+  localStorage.setItem('OC_PREF_MARCA', payload.marca || '');
+  localStorage.setItem('OC_PREF_FAMILIA', payload.familia || '');
+
+  byId('btn-guardar').disabled = true; msg('Guardando…');
+
+  try {
+    const res = await fetch(`${API}?action=guardar`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
     });
-  });
+    const js = await res.json();
+
+    if (js.ok) {
+      msg(`Guardado ✔ N° ${js.numero}`);
+      // limpiar pero dejo marca/familia y traigo el próximo número
+      byId('modelo').value = '';
+      byId('codigo_color').value = '';
+      byId('color_armazon').value = '';
+      byId('calibre').value = '';
+      byId('color_cristal').value = '';
+      byId('costo').value = '';
+      byId('tengo_precio').checked = false;
+      byId('precio').value = '';
+      byId('codigo_barras').value = '';
+      byId('observaciones').value = '';
+
+      await cargarNumeroSiguiente();
+      byId('modelo').focus();
+    } else {
+      msg(js.error || 'No se pudo guardar', false);
+    }
+  } catch (err) {
+    console.error(err);
+    msg('Error de red al guardar', false);
+  } finally {
+    byId('btn-guardar').disabled = false;
+  }
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-  // Restaurar marca/familia/fabrica
-  const m = localStorage.getItem(LS_MARCA_KEY);
-  if (m) { const el = document.getElementById('marca'); if (el) el.value = m; }
+/* ====== INIT ====== */
+function init() {
+  // Prefill de marca/familia
+  const prefMarca   = localStorage.getItem('OC_PREF_MARCA') || '';
+  const prefFamilia = localStorage.getItem('OC_PREF_FAMILIA') || '';
+  if (prefMarca) byId('marca').value = prefMarca;
+  if (prefFamilia) byId('familia').value = prefFamilia;
 
-  const f = localStorage.getItem(LS_FAMILIA_KEY);
-  if (f) { const el = document.getElementById('familia'); if (el) el.value = f; }
+  byId('tengo_precio').addEventListener('change', calcularPrecio);
+  byId('familia').addEventListener('change', calcularPrecio);
+  byId('costo').addEventListener('input',  calcularPrecio);
+  byId('precio').addEventListener('input', calcularPrecio);
 
-  const fab = localStorage.getItem(LS_FABRICA_KEY);
-  if (fab) { const el = document.getElementById('fabrica'); if (el) el.value = fab; }
-
-  // Forzar mayúsculas en vivo (texto/textarea)
-  bindLiveUppercase([
-    'n_anteojo','marca','modelo','codigo_color','color_armazon',
-    'calibre','color_cristal','codigo_barras','observaciones','fabrica'
-  ]);
-
-  // Número libre inicial
-  await setNumeroLibre();
-
-  // Persistir cambios de marca/familia/fabrica
-  const marcaEl = document.getElementById('marca');
-  if (marcaEl) {
-    const persistMarca = () => {
-      const v = marcaEl.value.trim().toUpperCase();
-      if (v) localStorage.setItem(LS_MARCA_KEY, v);
-    };
-    marcaEl.addEventListener('change', persistMarca);
-    marcaEl.addEventListener('input', persistMarca);
-  }
-
-  const familiaEl = document.getElementById('familia');
-  if (familiaEl) {
-    const persistFamilia = () => {
-      const v = familiaEl.value;
-      if (v) localStorage.setItem(LS_FAMILIA_KEY, v);
-    };
-    familiaEl.addEventListener('change', persistFamilia);
-  }
-
-  const fabricaEl = document.getElementById('fabrica');
-  if (fabricaEl) {
-    const persistFabrica = () => {
-      const v = fabricaEl.value.trim().toUpperCase();
-      if (v) localStorage.setItem(LS_FABRICA_KEY, v);
-    };
-    fabricaEl.addEventListener('change', persistFabrica);
-    fabricaEl.addEventListener('input', persistFabrica);
-  }
-
-  // NUEVO: toggle “tengo precio”
-  const chk = document.getElementById('tengo_precio');
-  const precioEl = document.getElementById('precio');
-  const costoEl = document.getElementById('costo');
-
-  if (chk && precioEl && costoEl) {
-    const toggle = () => {
-      if (chk.checked) {
-        // Voy a ingresar precio, no costo
-        precioEl.readOnly = false;
-        costoEl.value = '';
-        costoEl.readOnly = true;
-      } else {
-        // Flujo normal con costo
-        precioEl.readOnly = true;
-        precioEl.value = '';
-        costoEl.readOnly = false;
-      }
-    };
-    chk.addEventListener('change', toggle);
-    toggle(); // estado inicial
-  }
-});
-
-// Enter = guardar (salvo Shift+Enter)
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    const t = e.target.tagName;
-    if (t === 'TEXTAREA' || t === 'INPUT' || t === 'SELECT') {
+  // Atajo Enter para guardar
+  byId('form-anteojo').addEventListener('keydown', (e)=>{
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       guardar();
     }
-  }
-});
-
-// --- número libre ---
-async function setNumeroLibre() {
-  try {
-    const res = await fetch(`${URL}?todos=true`);
-    const datos = await res.json();
-
-    let numeroLibre = '';
-    for (let i = 1; i < datos.length; i++) {
-      const fila = datos[i];
-      const estaVacia = fila.slice(1, 8).every(c => !c);
-      if (fila[0] && estaVacia) { numeroLibre = fila[0]; break; }
-    }
-
-    if (numeroLibre) {
-      const n = document.getElementById('n_anteojo');
-      n.value = String(numeroLibre).toUpperCase();
-      mostrarMensaje("Listo para cargar 👓", "black");
-    } else {
-      mostrarMensaje("⚠ No se encontró número libre.", "orange");
-    }
-  } catch (err) {
-    console.error("Error al buscar número:", err);
-    mostrarMensaje("⚠ Error al buscar número.", "red");
-  }
-}
-
-function limpiarParaSiguiente() {
-  const marcaGuardada   = localStorage.getItem(LS_MARCA_KEY)   || "";
-  const familiaGuardada = localStorage.getItem(LS_FAMILIA_KEY) || "";
-  const fabricaGuardada = localStorage.getItem(LS_FABRICA_KEY) || "";
-
-  // Limpiar todos menos los persistentes
-  ['n_anteojo','modelo','codigo_color','color_armazon','calibre',
-   'color_cristal','costo','precio','codigo_barras','observaciones']
-   .forEach(id => { const el = document.getElementById(id); if (el) el.value=''; });
-
-  document.getElementById('marca').value   = marcaGuardada;
-  document.getElementById('familia').value = familiaGuardada;
-  document.getElementById('fabrica').value = fabricaGuardada;
-
-  document.getElementById('modelo').focus();
-}
-
-// --- precio automático (referencia visual) ---
-function calcularPrecio() {
-  const costo = parseFloat(document.getElementById('costo').value);
-  const fam = document.getElementById('familia').value;
-  if (!isNaN(costo) && (fam === "SOL" || fam === "RECETA")) {
-    const mult = fam === "RECETA" ? 3.63 : 2.42;
-    document.getElementById('precio').value = Math.round(costo * mult);
-  } else {
-    document.getElementById('precio').value = '';
-  }
-}
-window.calcularPrecio = calcularPrecio;
-
-// --- guardar ---
-async function guardar() {
-  const n_anteojo   = toUpper("n_anteojo");
-  const marca       = toUpper("marca");
-  const modelo      = toUpper("modelo");
-
-  if (!n_anteojo || !marca || !modelo) {
-    mostrarMensaje("⚠ Completá N° anteojo, marca y modelo.", "red");
-    return;
-  }
-
-  // persistencias
-  localStorage.setItem(LS_MARCA_KEY, marca);
-  const familiaVal = document.getElementById("familia").value;
-  if (familiaVal) localStorage.setItem(LS_FAMILIA_KEY, familiaVal);
-  const fabricaVal = toUpper("fabrica");
-  if (fabricaVal) localStorage.setItem(LS_FABRICA_KEY, fabricaVal);
-
-  const tengoPrecio = document.getElementById('tengo_precio')?.checked || false;
-
-  const baseParams = {
-    action:        'guardar_anteojo',
-    n_anteojo,
-    marca,
-    modelo,
-    codigo_color:   toUpper("codigo_color"),
-    color_armazon:  toUpper("color_armazon"),
-    calibre:        toUpper("calibre"),
-    color_cristal:  toUpper("color_cristal"),
-    familia:        familiaVal,
-    fecha_ingreso:  new Date().toLocaleDateString("es-AR"),
-    codigo_barras:  toUpper("codigo_barras"),
-    observaciones:  toUpper("observaciones"),
-    fabrica:        fabricaVal
-  };
-
-  const params = new URLSearchParams({
-    ...baseParams,
-    ...(tengoPrecio
-      ? { usar_precio_directo: '1', precio_publico: document.getElementById("precio").value }
-      : { costo: document.getElementById("costo").value }
-    )
   });
 
-  try {
-    if (btn()) btn().disabled = true;
-    const res = await fetch(`${URL}?${params.toString()}`);
-    const data = await res.json();
-
-    if (data.success || data.ok) {
-      mostrarMensaje(`✅ Guardado correctamente: ${n_anteojo}`, "green");
-      limpiarParaSiguiente();
-      await setNumeroLibre();
-    } else {
-      const errMsg = data.error || data.msg || "Error desconocido";
-      mostrarMensaje("❌ " + errMsg, "red");
-    }
-  } catch (error) {
-    console.error(error);
-    mostrarMensaje("❌ Error de conexión con el servidor.", "red");
-  } finally {
-    if (btn()) btn().disabled = false;
-  }
+  cargarNumeroSiguiente();
 }
 
-function mostrarMensaje(texto, color = "black") {
-  msg().innerText = texto;
-  msg().style.color = color;
-}
+window.addEventListener('DOMContentLoaded', init);
