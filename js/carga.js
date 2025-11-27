@@ -79,21 +79,22 @@ async function guardar(){
   if (!API) { msg('Falta configurar la URL del Script', false); return; }
 
   const payload = {
-    n_anteojo      : byId('n_anteojo').value.trim(), // el backend igual usa max+1
-    fabrica        : byId('fabrica').value.trim(),
-    marca          : byId('marca').value.trim(),
-    modelo         : byId('modelo').value.trim(),
-    codigo_color   : byId('codigo_color').value.trim(),
-    color_armazon  : byId('color_armazon').value.trim(),
-    calibre        : byId('calibre').value.trim(),
-    color_cristal  : byId('color_cristal').value.trim(),
-    familia        : byId('familia').value.trim(),
-    costo          : byId('costo').value,
-    tengo_precio   : byId('tengo_precio').checked,
-    precio         : byId('precio').value,
-    codigo_barras  : byId('codigo_barras').value.trim(),
-    observaciones  : byId('observaciones').value.trim(),
-  };
+  n_anteojo      : byId('n_anteojo').value.trim(),
+  fabrica        : byId('fabrica').value.trim(),
+  marca          : byId('marca').value.trim(),
+  modelo         : byId('modelo').value.trim(),
+  color          : byId('codigo_color').value.trim(),
+  armazon        : byId('color_armazon').value.trim(),
+  calibre        : byId('calibre').value.trim(),
+  color_cristal  : byId('color_cristal').value.trim(),
+  familia        : byId('familia').value.trim(),
+  costo          : byId('costo').value,
+  tengo_precio   : byId('tengo_precio').checked,
+  precio         : byId('precio').value,
+  codigo_barras  : byId('codigo_barras').value.trim(),
+  observaciones  : byId('observaciones').value.trim(),
+};
+
 
   // Validito mínimo
   if (!payload.familia) { msg('Elegí una Familia (SOL / RECETA)', false); byId('familia').focus(); return; }
