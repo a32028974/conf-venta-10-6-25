@@ -1,3 +1,4 @@
+html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -23,7 +24,7 @@
 
   <div id="mensaje-flotante">Listo para cargar 👓</div>
 
-  <h1>Cargar nuevo anteojo V2 </h1>
+  <h1>Cargar nuevo anteojo V2</h1>
 
   <form id="form-anteojo" onsubmit="event.preventDefault(); guardar();">
     <label for="n_anteojo">N° anteojo</label>
@@ -90,114 +91,7 @@
     <small class="hint">Tip: también podés <b>apretar Enter</b> para guardar.</small>
   </form>
 
-<script>
-/* ====== CONFIG ====== */
-const API = 'https://script.google.com/macros/s/AKfycbwD8HyjyM_biqlm3Mvxn0IjFyfx7JVYnkkLLPN24uMrSkfa3NUhtju2JSC4BZcTKUVCtg/exec';
-
-/* ====== HELPERS ====== */
-const byId = id => document.getElementById(id);
-function msg(t, ok=true){ const b=byId('mensaje-flotante'); b.textContent=t; b.style.color=ok?'#111':'#b00020'; }
-function toNum(v){ const n=parseFloat((v??'').toString().replace(',','.')); return isNaN(n)?'':+n.toFixed(2); }
-function factor(f){ f=(f||'').toUpperCase(); if(f==='RECETA')return 3.63; if(f==='SOL')return 2.42; return null; }
-function qs(obj){ return Object.entries(obj).map(([k,v])=>`${encodeURIComponent(k)}=${encodeURIComponent(v==null?'':v)}`).join('&'); }
-
-/* ====== JSONP loader ====== */
-function jsonp(url){
-  return new Promise((resolve,reject)=>{
-    const cb = 'cb_' + Math.random().toString(36).slice(2);
-    window[cb] = data => { resolve(data); delete window[cb]; s.remove(); };
-    const s = document.createElement('script');
-    s.src = url + (url.includes('?')?'&':'?') + 'callback=' + cb;
-    s.onerror = ()=>{ delete window[cb]; s.remove(); reject(new Error('JSONP error')); };
-    document.head.appendChild(s);
-  });
-}
-
-/* ====== Precio <-> Costo ====== */
-function recalcular(){
-  const tengo = byId('tengo_precio').checked;
-  const fam = byId('familia').value;
-  const k = factor(fam);
-  byId('precio').readOnly = !tengo;
-  byId('costo').readOnly  =  tengo;
-
-  const costo  = toNum(byId('costo').value);
-  const precio = toNum(byId('precio').value);
-  if (!k) return;
-  if (tengo) {
-    if (precio !== '') byId('costo').value = (precio / k).toFixed(2);
-  } else {
-    if (costo  !== '') byId('precio').value = (costo * k).toFixed(2);
-  }
-}
-
-/* ====== API ====== */
-async function cargarNumeroSiguiente(){
-  try{
-    const data = await jsonp(API + '?action=nextNumero');
-    if (data.ok){
-      byId('n_anteojo').value = data.numero;
-      msg('Listo para cargar 👓');
-    } else {
-      msg(data.error || 'No pude obtener el número', false);
-    }
-  }catch(e){
-    console.error(e); msg('Error de red obteniendo número', false);
-  }
-}
-
-async function guardar(){
-  // datos
-  const payload = {
-    fabrica: byId('fabrica').value.trim(),
-    marca: byId('marca').value.trim(),
-    modelo: byId('modelo').value.trim(),
-    codigo_color: byId('codigo_color').value.trim(),
-    color_armazon: byId('color_armazon').value.trim(),
-    calibre: byId('calibre').value.trim(),
-    color_cristal: byId('color_cristal').value.trim(),
-    familia: byId('familia').value.trim(),
-    costo: byId('costo').value,
-    tengo_precio: byId('tengo_precio').checked ? 'true' : 'false',
-    precio: byId('precio').value,
-    codigo_barras: byId('codigo_barras').value.trim(),
-    observaciones: byId('observaciones').value.trim(),
-  };
-
-  if (!payload.familia){ msg('Elegí una Familia (SOL / RECETA)', false); byId('familia').focus(); return; }
-
-  byId('btn-guardar').disabled = true; msg('Guardando…');
-  try{
-    const url = API + '?action=guardar&' + qs(payload);
-    const data = await jsonp(url);
-    if (data.ok){
-      msg(`Guardado ✔ N° ${data.numero}`);
-      // limpiar detalle
-      ['modelo','codigo_color','color_armazon','calibre','color_cristal','costo','precio','codigo_barras','observaciones'].forEach(id=>byId(id).value='');
-      byId('tengo_precio').checked = false;
-      await cargarNumeroSiguiente();
-      byId('modelo').focus();
-    }else{
-      msg(data.error || 'No se pudo guardar', false);
-    }
-  }catch(e){
-    console.error(e); msg('Error de red al guardar', false);
-  }finally{
-    byId('btn-guardar').disabled = false;
-  }
-}
-
-/* ====== INIT ====== */
-function init(){
-  byId('tengo_precio').addEventListener('change',recalcular);
-  byId('familia').addEventListener('change',recalcular);
-  byId('costo').addEventListener('input',recalcular);
-  byId('precio').addEventListener('input',recalcular);
-  cargarNumeroSiguiente();
-  byId('marca').focus();
-}
-window.addEventListener('DOMContentLoaded', init);
-</script>
-
+  <!-- 🔹 ACA USAMOS SOLO EL JS EXTERNO -->
+  <script src="carga.js?v=20251127"></script>
 </body>
 </html>
