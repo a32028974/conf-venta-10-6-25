@@ -66,12 +66,27 @@ async function cargarNumeroSiguiente() {
   }
 }
 
-/* ====== GUARDAR ====== */
+/* ====== JSONP ====== */
+function jsonp(url){
+  return new Promise((resolve,reject)=>{
+    const cb = 'cb_' + Math.random().toString(36).slice(2);
+    window[cb] = data => { resolve(data); delete window[cb]; s.remove(); };
+    const s = document.createElement('script');
+    s.src = url + (url.includes('?')?'&':'?') + 'callback=' + cb;
+    s.onerror = ()=>{ delete window[cb]; s.remove(); reject(new Error('JSONP error')); };
+    document.head.appendChild(s);
+  });
+}
+
+/* ====== SERIALIZADOR ====== */
+function qs(obj){
+  return Object.entries(obj)
+    .map(([k,v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v ?? '')}`)
+    .join('&');
+}
+
+/* ====== GUARDAR (SIN CORS) ====== */
 async function guardar() {
-  if (!API) {
-    msg('Falta configurar la URL del Script', false);
-    return;
-  }
 
   const codigoColor  = byId('codigo_color').value.trim();
   const colorArmazon = byId('color_armazon').value.trim();
@@ -82,11 +97,11 @@ async function guardar() {
     marca          : byId('marca').value.trim(),
     modelo         : byId('modelo').value.trim(),
 
-    // Nuevos nombres lógicos
+    // Lógicos
     color          : codigoColor,
     armazon        : colorArmazon,
 
-    // Nombres viejos cruzados (por compatibilidad con el Apps Script actual)
+    // Compatibilidad cruzada con script
     codigo_color   : colorArmazon,
     color_armazon  : codigoColor,
 
@@ -94,62 +109,59 @@ async function guardar() {
     color_cristal  : byId('color_cristal').value.trim(),
     familia        : byId('familia').value.trim(),
     costo          : byId('costo').value,
-    tengo_precio   : byId('tengo_precio').checked,
+    tengo_precio   : byId('tengo_precio').checked ? 'true' : 'false',
     precio         : byId('precio').value,
     codigo_barras  : byId('codigo_barras').value.trim(),
     observaciones  : byId('observaciones').value.trim(),
   };
 
-  // Validación mínima
-  if (!payload.familia) {
+  if (!payload.familia){
     msg('Elegí una Familia (SOL / RECETA)', false);
     byId('familia').focus();
     return;
   }
 
-  // ✅ Guardar defaults útiles (FÁBRICA, MARCA, FAMILIA)
+  // ✅ Persistir fabrica / marca / familia
   localStorage.setItem('OC_PREF_FABRICA', payload.fabrica || '');
-  localStorage.setItem('OC_PREF_MARCA',   payload.marca   || '');
+  localStorage.setItem('OC_PREF_MARCA', payload.marca || '');
   localStorage.setItem('OC_PREF_FAMILIA', payload.familia || '');
 
   byId('btn-guardar').disabled = true;
   msg('Guardando…');
 
   try {
-    const res = await fetch(`${API}?action=guardar`, {
-      method : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body   : JSON.stringify(payload)
-    });
-    const js = await res.json();
+    const url = `${API}?action=guardar&${qs(payload)}`;
+    const data = await jsonp(url);
 
-    if (js.ok) {
-      msg(`Guardado ✔ N° ${js.numero}`);
+    if (data.ok){
+      msg(`Guardado ✔ N° ${data.numero}`);
 
-      // Limpiar detalle pero dejo Fábrica, Marca y Familia pre-cargadas
-      byId('modelo').value        = '';
-      byId('codigo_color').value  = '';
+      // limpiar sin borrar fábrica/marca/familia
+      byId('modelo').value = '';
+      byId('codigo_color').value = '';
       byId('color_armazon').value = '';
-      byId('calibre').value       = '';
+      byId('calibre').value = '';
       byId('color_cristal').value = '';
-      byId('costo').value         = '';
+      byId('costo').value = '';
       byId('tengo_precio').checked = false;
-      byId('precio').value        = '';
+      byId('precio').value = '';
       byId('codigo_barras').value = '';
       byId('observaciones').value = '';
 
       await cargarNumeroSiguiente();
       byId('modelo').focus();
     } else {
-      msg(js.error || 'No se pudo guardar', false);
+      msg(data.error || 'No se pudo guardar', false);
     }
-  } catch (err) {
-    console.error(err);
+
+  } catch (e){
+    console.error(e);
     msg('Error de red al guardar', false);
   } finally {
     byId('btn-guardar').disabled = false;
   }
 }
+
 
 /* ====== INIT ====== */
 function init() {
