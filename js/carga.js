@@ -1,6 +1,6 @@
 /* ====== CONFIG ====== */
 // Usar SIEMPRE este Apps Script (el que ya funcionaba con la versión anterior)
-const API = 'https://script.google.com/macros/s/AKfycbxHVKLy--JJx4oWa_j9DkNKEMxEUcsmB71dtkWAlUvl7I8_u1OVQzJk23DJMWYVT8d7gA/exec';
+const API = 'https://script.google.com/macros/s/AKfycbyDiKg8jrmC9CKvGTuv9bP-2S6d1YmFeZ_KPU3AlhivnnPqBUS5GzVci5IXqSoN2UC8/exec';
 
 /* ====== HELPERS ====== */
 const $   = s  => document.querySelector(s);
