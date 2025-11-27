@@ -78,13 +78,24 @@ async function cargarNumeroSiguiente() {
 async function guardar(){
   if (!API) { msg('Falta configurar la URL del Script', false); return; }
 
-  const payload = {
+ const codigoColor  = byId('codigo_color').value.trim();
+const colorArmazon = byId('color_armazon').value.trim();
+
+const payload = {
   n_anteojo      : byId('n_anteojo').value.trim(),
   fabrica        : byId('fabrica').value.trim(),
   marca          : byId('marca').value.trim(),
   modelo         : byId('modelo').value.trim(),
-  color          : byId('codigo_color').value.trim(),
-  armazon        : byId('color_armazon').value.trim(),
+
+  // 🔹 Nuevos nombres "lógicos"
+  color          : codigoColor,      // lo que querés ver en COLUMNA COLOR
+  armazon        : colorArmazon,     // lo que querés ver en COLUMNA ARMAZON
+
+  // 🔹 Nombres viejos PERO CRUZADOS para corregir lo del Apps Script
+  //    (el backend probablemente hace: COLOR ← color_armazon / ARMAZON ← codigo_color)
+  codigo_color   : colorArmazon,     // le mandamos el color de ARMAZÓN
+  color_armazon  : codigoColor,      // le mandamos el "código color"
+
   calibre        : byId('calibre').value.trim(),
   color_cristal  : byId('color_cristal').value.trim(),
   familia        : byId('familia').value.trim(),
@@ -94,6 +105,7 @@ async function guardar(){
   codigo_barras  : byId('codigo_barras').value.trim(),
   observaciones  : byId('observaciones').value.trim(),
 };
+
 
 
   // Validito mínimo
