@@ -91,29 +91,29 @@ async function guardar() {
   const codigoColor  = byId('codigo_color').value.trim();
   const colorArmazon = byId('color_armazon').value.trim();
 
-  const payload = {
-    n_anteojo      : byId('n_anteojo').value.trim(),
-    fabrica        : byId('fabrica').value.trim(),
-    marca          : byId('marca').value.trim(),
-    modelo         : byId('modelo').value.trim(),
+ const payload = {
+  n_anteojo      : byId('n_anteojo').value.trim(),
+  fabrica        : byId('fabrica').value.trim(),
+  marca          : byId('marca').value.trim(),
+  modelo         : byId('modelo').value.trim(),
 
-    // Lógicos
-    color          : codigoColor,
-    armazon        : colorArmazon,
+  // En todos los nombres, mandamos el valor correcto
+  color          : codigoColor,      // para COLOR
+  armazon        : colorArmazon,     // para ARMAZON
 
-    // Compatibilidad cruzada con script
-    codigo_color   : colorArmazon,
-    color_armazon  : codigoColor,
+  codigo_color   : codigoColor,      // compatibilidad vieja
+  color_armazon  : colorArmazon,     // compatibilidad vieja
 
-    calibre        : byId('calibre').value.trim(),
-    color_cristal  : byId('color_cristal').value.trim(),
-    familia        : byId('familia').value.trim(),
-    costo          : byId('costo').value,
-    tengo_precio   : byId('tengo_precio').checked ? 'true' : 'false',
-    precio         : byId('precio').value,
-    codigo_barras  : byId('codigo_barras').value.trim(),
-    observaciones  : byId('observaciones').value.trim(),
-  };
+  calibre        : byId('calibre').value.trim(),
+  color_cristal  : byId('color_cristal').value.trim(),
+  familia        : byId('familia').value.trim(),
+  costo          : byId('costo').value,
+  tengo_precio   : byId('tengo_precio').checked ? 'true' : 'false',
+  precio         : byId('precio').value,
+  codigo_barras  : byId('codigo_barras').value.trim(),
+  observaciones  : byId('observaciones').value.trim(),
+};
+
 
   if (!payload.familia){
     msg('Elegí una Familia (SOL / RECETA)', false);
