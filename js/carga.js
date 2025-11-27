@@ -1,51 +1,48 @@
 /* ====== CONFIG ====== */
-// Pegá 1 sola vez tu URL /exec en la caja (o hardcodeala acá).
+// Usar SIEMPRE este Apps Script (el que ya funcionaba con la versión anterior)
 const API = 'https://script.google.com/macros/s/AKfycbwD8HyjyM_biqlm3Mvxn0IjFyfx7JVYnkkLLPN24uMrSkfa3NUhtju2JSC4BZcTKUVCtg/exec';
 
 /* ====== HELPERS ====== */
-const $ = s => document.querySelector(s);
+const $   = s  => document.querySelector(s);
 const byId = id => document.getElementById(id);
 
-function msg(txt, ok=true) {
+function msg(txt, ok = true) {
   const box = byId('mensaje-flotante');
   box.textContent = txt;
   box.style.color = ok ? '#111' : '#b00020';
 }
 
-function toNumber(v){
-  const n = parseFloat((v??'').toString().replace(',','.'));
+function toNumber(v) {
+  const n = parseFloat((v ?? '').toString().replace(',', '.'));
   return isNaN(n) ? '' : +n.toFixed(2);
 }
 
-function getFactor(fam){
-  const F = (fam||'').toUpperCase();
+function getFactor(fam) {
+  const F = (fam || '').toUpperCase();
   if (F === 'RECETA') return 3.63;
   if (F === 'SOL')    return 2.42;
   return null;
 }
 
 /* ====== PRECIO <-> COSTO ====== */
-function calcularPrecio(){
+function calcularPrecio() {
   const tengo = byId('tengo_precio').checked;
   const fam   = byId('familia').value;
   const k     = getFactor(fam);
 
-  // Toggle de readonly/disabled
   byId('precio').readOnly = !tengo;
   byId('costo').readOnly  =  tengo;
 
   const costo  = toNumber(byId('costo').value);
   const precio = toNumber(byId('precio').value);
 
-  if (!k) return; // sin familia no calculamos
+  if (!k) return;
 
   if (tengo) {
-    // Tengo precio -> inferir costo
     if (precio !== '') {
       byId('costo').value = (precio / k).toFixed(2);
     }
   } else {
-    // Tengo costo -> calcular precio
     if (costo !== '') {
       byId('precio').value = (costo * k).toFixed(2);
     }
@@ -54,12 +51,8 @@ function calcularPrecio(){
 
 /* ====== CARGAR NÚMERO SIGUIENTE ====== */
 async function cargarNumeroSiguiente() {
-  if (!API) {
-    msg('Pegar URL de Apps Script (OC_API) faltante', false);
-    return;
-  }
   try {
-    const r  = await fetch(`${API}?action=nextNumero`, { cache:'no-store' });
+    const r  = await fetch(`${API}?action=nextNumero`, { cache: 'no-store' });
     const js = await r.json();
     if (js.ok) {
       byId('n_anteojo').value = js.numero;
@@ -74,67 +67,74 @@ async function cargarNumeroSiguiente() {
 }
 
 /* ====== GUARDAR ====== */
-async function guardar(){
-  if (!API) { msg('Falta configurar la URL del Script', false); return; }
+async function guardar() {
+  if (!API) {
+    msg('Falta configurar la URL del Script', false);
+    return;
+  }
 
- const codigoColor  = byId('codigo_color').value.trim();
-const colorArmazon = byId('color_armazon').value.trim();
+  const codigoColor  = byId('codigo_color').value.trim();
+  const colorArmazon = byId('color_armazon').value.trim();
 
-const payload = {
-  n_anteojo      : byId('n_anteojo').value.trim(),
-  fabrica        : byId('fabrica').value.trim(),
-  marca          : byId('marca').value.trim(),
-  modelo         : byId('modelo').value.trim(),
+  const payload = {
+    n_anteojo      : byId('n_anteojo').value.trim(),
+    fabrica        : byId('fabrica').value.trim(),
+    marca          : byId('marca').value.trim(),
+    modelo         : byId('modelo').value.trim(),
 
-  // 🔹 Nuevos nombres "lógicos"
-  color          : codigoColor,      // lo que querés ver en COLUMNA COLOR
-  armazon        : colorArmazon,     // lo que querés ver en COLUMNA ARMAZON
+    // Nuevos nombres lógicos
+    color          : codigoColor,
+    armazon        : colorArmazon,
 
-  // 🔹 Nombres viejos PERO CRUZADOS para corregir lo del Apps Script
-  //    (el backend probablemente hace: COLOR ← color_armazon / ARMAZON ← codigo_color)
-  codigo_color   : colorArmazon,     // le mandamos el color de ARMAZÓN
-  color_armazon  : codigoColor,      // le mandamos el "código color"
+    // Nombres viejos cruzados (por compatibilidad con el Apps Script actual)
+    codigo_color   : colorArmazon,
+    color_armazon  : codigoColor,
 
-  calibre        : byId('calibre').value.trim(),
-  color_cristal  : byId('color_cristal').value.trim(),
-  familia        : byId('familia').value.trim(),
-  costo          : byId('costo').value,
-  tengo_precio   : byId('tengo_precio').checked,
-  precio         : byId('precio').value,
-  codigo_barras  : byId('codigo_barras').value.trim(),
-  observaciones  : byId('observaciones').value.trim(),
-};
+    calibre        : byId('calibre').value.trim(),
+    color_cristal  : byId('color_cristal').value.trim(),
+    familia        : byId('familia').value.trim(),
+    costo          : byId('costo').value,
+    tengo_precio   : byId('tengo_precio').checked,
+    precio         : byId('precio').value,
+    codigo_barras  : byId('codigo_barras').value.trim(),
+    observaciones  : byId('observaciones').value.trim(),
+  };
 
+  // Validación mínima
+  if (!payload.familia) {
+    msg('Elegí una Familia (SOL / RECETA)', false);
+    byId('familia').focus();
+    return;
+  }
 
-
-  // Validito mínimo
-  if (!payload.familia) { msg('Elegí una Familia (SOL / RECETA)', false); byId('familia').focus(); return; }
-
-  // Guardar defaults útiles
-  localStorage.setItem('OC_PREF_MARCA', payload.marca || '');
+  // ✅ Guardar defaults útiles (FÁBRICA, MARCA, FAMILIA)
+  localStorage.setItem('OC_PREF_FABRICA', payload.fabrica || '');
+  localStorage.setItem('OC_PREF_MARCA',   payload.marca   || '');
   localStorage.setItem('OC_PREF_FAMILIA', payload.familia || '');
 
-  byId('btn-guardar').disabled = true; msg('Guardando…');
+  byId('btn-guardar').disabled = true;
+  msg('Guardando…');
 
   try {
     const res = await fetch(`${API}?action=guardar`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(payload)
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify(payload)
     });
     const js = await res.json();
 
     if (js.ok) {
       msg(`Guardado ✔ N° ${js.numero}`);
-      // limpiar pero dejo marca/familia y traigo el próximo número
-      byId('modelo').value = '';
-      byId('codigo_color').value = '';
+
+      // Limpiar detalle pero dejo Fábrica, Marca y Familia pre-cargadas
+      byId('modelo').value        = '';
+      byId('codigo_color').value  = '';
       byId('color_armazon').value = '';
-      byId('calibre').value = '';
+      byId('calibre').value       = '';
       byId('color_cristal').value = '';
-      byId('costo').value = '';
+      byId('costo').value         = '';
       byId('tengo_precio').checked = false;
-      byId('precio').value = '';
+      byId('precio').value        = '';
       byId('codigo_barras').value = '';
       byId('observaciones').value = '';
 
@@ -153,19 +153,22 @@ const payload = {
 
 /* ====== INIT ====== */
 function init() {
-  // Prefill de marca/familia
-  const prefMarca   = localStorage.getItem('OC_PREF_MARCA') || '';
+  // ✅ Prefill desde localStorage
+  const prefFabrica = localStorage.getItem('OC_PREF_FABRICA') || '';
+  const prefMarca   = localStorage.getItem('OC_PREF_MARCA')   || '';
   const prefFamilia = localStorage.getItem('OC_PREF_FAMILIA') || '';
-  if (prefMarca) byId('marca').value = prefMarca;
+
+  if (prefFabrica) byId('fabrica').value = prefFabrica;
+  if (prefMarca)   byId('marca').value   = prefMarca;
   if (prefFamilia) byId('familia').value = prefFamilia;
 
   byId('tengo_precio').addEventListener('change', calcularPrecio);
-  byId('familia').addEventListener('change', calcularPrecio);
-  byId('costo').addEventListener('input',  calcularPrecio);
-  byId('precio').addEventListener('input', calcularPrecio);
+  byId('familia').addEventListener('change',       calcularPrecio);
+  byId('costo').addEventListener('input',          calcularPrecio);
+  byId('precio').addEventListener('input',         calcularPrecio);
 
   // Atajo Enter para guardar
-  byId('form-anteojo').addEventListener('keydown', (e)=>{
+  byId('form-anteojo').addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       guardar();
