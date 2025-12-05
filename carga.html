@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>Cargar nuevo anteojo</title>
   <style>
-    :root { --bg:#f5f5f5; --fg:#111; --muted:#666; --btn:#222; --btnH:#444; }
+    :root { --bg:#f5f5f5; --fg:#111; --muted:#666; --btn:#222; --btnH:#444; --btnAlt:#2563eb; }
     body{font-family:Arial, sans-serif; background:var(--bg); color:var(--fg); padding:18px; max-width:760px; margin:auto}
     h1{font-size:1.4rem; margin:0 0 14px}
     label{display:block; font-weight:600; margin-top:12px}
@@ -17,13 +17,30 @@
     #mensaje-flotante{ position:sticky; top:0; padding:10px 12px; margin-bottom:10px; background:#fff; border:1px solid #ddd; border-radius:6px; font-weight:600 }
     .row-2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
     @media (max-width:560px){ .row-2{grid-template-columns:1fr} }
+
+    /* 🔹 BOTÓN NUEVO */
+    .btn-ir{
+      background:var(--btnAlt);
+      margin-bottom:14px;
+    }
+    .btn-ir:hover{
+      background:#1e40af;
+    }
   </style>
 </head>
 <body>
 
   <div id="mensaje-flotante">Listo para cargar 👓</div>
 
-  <h1>Cargar nuevo anteojo v3 </h1>
+  <h1>Cargar nuevo anteojo v3</h1>
+
+  <!-- 🔹 BOTÓN PARA IR A LA OTRA PÁGINA -->
+  <button 
+    class="btn-ir"
+    type="button"
+    onclick="window.location.href='https://TU-OTRA-PAGINA.github.io/actualizar.html';">
+    Ir a actualizar precio / código
+  </button>
 
   <form id="form-anteojo" onsubmit="event.preventDefault(); guardar();">
     <label for="n_anteojo">N° anteojo</label>
@@ -90,7 +107,7 @@
     <small class="hint">Tip: también podés <b>apretar Enter</b> para guardar.</small>
   </form>
 
-  <!-- 🔹 ACA USAMOS SOLO EL JS EXTERNO -->
+  <!-- 🔹 JS EXTERNO -->
   <script src="js/carga.js?v=20251127"></script>
 </body>
 </html>
