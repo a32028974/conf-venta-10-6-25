@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cambiar precio de anteojo • Óptica Cristal</title>
+  <link rel="icon" href="logo.png" />
+
+  <style>
+    :root{
+      --bg:#f5f6f8;
+      --panel:#ffffff;
+      --line:#e5e7eb;
+      --muted:#6b7280;
+      --accent:#2563eb;
+      --accent2:#16a34a;
+      --danger:#b91c1c;
+    }
+    *{ box-sizing:border-box; font-family:system-ui,Segoe UI,Arial,sans-serif; }
+    body{
+      margin:0; padding:16px;
+      background:var(--bg); color:#111;
+      display:flex; justify-content:center;
+    }
+    .wrap{
+      width:100%; max-width:600px;
+      background:var(--panel);
+      border-radius:14px;
+      border:1px solid var(--line);
+      box-shadow:0 4px 12px rgba(15,23,42,.08);
+      padding:18px 18px 24px;
+    }
+    h1{
+      margin:0 0 12px;
+      font-size:20px;
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    h1 span.small{ font-size:12px; font-weight:400; color:var(--muted); }
+    label{
+      font-size:14px; font-weight:500;
+      display:block; margin:10px 0 4px;
+    }
+    input[type="number"],
+    input[type="text"]{
+      width:100%;
+      border-radius:8px;
+      border:1px solid var(--line);
+      padding:8px 10px;
+      font-size:14px;
+    }
+    input[readonly]{
+      background:#f9fafb;
+      color:#374151;
+    }
+    .row{
+      display:flex; gap:10px;
+    }
+    .row > div{ flex:1; }
+    button{
+      border:none;
+      border-radius:999px;
+      padding:8px 16px;
+      font-size:14px;
+      font-weight:500;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      margin-top:10px;
+    }
+    .btn-primary{
+      background:var(--accent); color:#fff;
+    }
+    .btn-primary:disabled{
+      opacity:.6; cursor:not-allowed;
+    }
+    .btn-secondary{
+      background:#e5e7eb; color:#111;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:12px;
+      background:#eff6ff;
+      color:#1d4ed8;
+    }
+    .pill.sol{ background:#fef3c7; color:#92400e; }
+    .pill.receta{ background:#dcfce7; color:#166534; }
+    .details{
+      margin-top:14px;
+      padding-top:12px;
+      border-top:1px solid var(--line);
+    }
+    .muted{ font-size:12px; color:var(--muted); }
+    .msg{
+      margin-top:12px;
+      font-size:13px;
+    }
+    .msg.ok{ color:var(--accent2); }
+    .msg.error{ color:var(--danger); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>
+      Cambiar precio de anteojo
+      <span class="small">Stock • hoja "Stock"</span>
+    </h1>
+
+    <!-- BUSCAR ANTEOJO -->
+    <label for="numero">N° de anteojo (columna A)</label>
+    <div class="row">
+      <div>
+        <input type="number" id="numero" placeholder="Ej: 18" />
+      </div>
+      <div style="flex:0 0 auto; display:flex; align-items:flex-end;">
+        <button class="btn-primary" id="btnBuscar">Buscar</button>
+      </div>
+    </div>
+    <p class="muted">Escribí el número de anteojo y apretá "Buscar".</p>
+
+    <!-- DETALLE -->
+    <div id="detalle" class="details" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <strong>Detalle del anteojo</strong>
+        <span id="pillFamilia" class="pill">Familia</span>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Marca</label>
+          <input type="text" id="marca" readonly />
+        </div>
+        <div>
+          <label>Modelo</label>
+          <input type="text" id="modelo" readonly />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Color</label>
+          <input type="text" id="color" readonly />
+        </div>
+        <div>
+          <label>Armazón</label>
+          <input type="text" id="armazon" readonly />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Cristal</label>
+          <input type="text" id="cristal" readonly />
+        </div>
+        <div>
+          <label>Familia</label>
+          <input type="text" id="familia" readonly />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Precio actual (columna I)</label>
+          <input type="text" id="precioActual" readonly />
+        </div>
+        <div>
+          <label>Costo actual (columna M)</label>
+          <input type="text" id="costoActual" readonly />
+        </div>
+      </div>
+
+      <hr style="margin:16px 0; border:none; border-top:1px dashed var(--line);" />
+
+      <!-- NUEVO PRECIO -->
+      <label for="nuevoPrecio">Nuevo precio público (lo que querés cobrar)</label>
+      <input type="number" id="nuevoPrecio" placeholder="Ej: 450000" />
+
+      <p class="muted">
+        Se recalcula el <strong>costo (columna M)</strong> usando el factor según FAMILIA (SOL/RECETA).
+        La fórmula de <strong>PRECIO (columna I)</strong> queda igual que ahora.
+      </p>
+
+      <div style="display:flex; gap:10px; margin-top:6px;">
+        <button class="btn-primary" id="btnActualizar">Actualizar costo</button>
+        <button class="btn-secondary" id="btnLimpiar">Limpiar</button>
+      </div>
+
+      <div id="msg" class="msg"></div>
+    </div>
+  </div>
+
+  <script>
+    // PONÉ ACÁ TU URL DE APPS SCRIPT
+    const API_URL = 'https://script.google.com/macros/s/AKfycbw1aL1vS7hTdJz2VplQVqjRBV7yEA2QIwUyrdEdGYaI0t-3ReuQE7TamC2Foa9j2fm2KQ/exec';
+
+    const numeroInput      = document.getElementById('numero');
+    const btnBuscar        = document.getElementById('btnBuscar');
+    const detalleBox       = document.getElementById('detalle');
+    const pillFamilia      = document.getElementById('pillFamilia');
+    const marcaInput       = document.getElementById('marca');
+    const modeloInput      = document.getElementById('modelo');
+    const colorInput       = document.getElementById('color');
+    const armazonInput     = document.getElementById('armazon');
+    const cristalInput     = document.getElementById('cristal');
+    const familiaInput     = document.getElementById('familia');
+    const precioActualInput= document.getElementById('precioActual');
+    const costoActualInput = document.getElementById('costoActual');
+    const nuevoPrecioInput = document.getElementById('nuevoPrecio');
+    const btnActualizar    = document.getElementById('btnActualizar');
+    const btnLimpiar       = document.getElementById('btnLimpiar');
+    const msgBox           = document.getElementById('msg');
+
+    let anteojoActual = null; // guardamos datos básicos (numero, familia, etc.)
+
+    function setMsg(text, type=''){
+      msgBox.textContent = text || '';
+      msgBox.className = 'msg ' + (type || '');
+    }
+
+    function resetDetalle(){
+      detalleBox.style.display = 'none';
+      anteojoActual = null;
+      marcaInput.value = '';
+      modeloInput.value = '';
+      colorInput.value = '';
+      armazonInput.value = '';
+      cristalInput.value = '';
+      familiaInput.value = '';
+      precioActualInput.value = '';
+      costoActualInput.value = '';
+      nuevoPrecioInput.value = '';
+      pillFamilia.textContent = 'Familia';
+      pillFamilia.className = 'pill';
+      setMsg('');
+    }
+
+    async function buscarAnteojo(){
+      const numero = numeroInput.value.trim();
+      if(!numero){
+        alert('Ingresá un número de anteojo.');
+        return;
+      }
+      resetDetalle();
+      setMsg('Buscando anteojo...', '');
+      btnBuscar.disabled = true;
+
+      try{
+        const url = `${API_URL}?accion=buscar&numero=${encodeURIComponent(numero)}`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if(!data.ok){
+          setMsg(data.error || 'Anteojo no encontrado.', 'error');
+          btnBuscar.disabled = false;
+          return;
+        }
+
+        anteojoActual = data;
+
+        marcaInput.value        = data.marca  || '';
+        modeloInput.value       = data.modelo || '';
+        colorInput.value        = data.color  || '';
+        armazonInput.value      = data.armazon|| '';
+        cristalInput.value      = data.cristal|| '';
+        familiaInput.value      = data.familia|| '';
+        precioActualInput.value = data.precio || '';
+        costoActualInput.value  = data.costo  || '';
+
+        pillFamilia.textContent = data.familia || 'Familia';
+        pillFamilia.className = 'pill';
+        if(data.familia === 'SOL'){
+          pillFamilia.classList.add('sol');
+        }else if(data.familia === 'RECETA'){
+          pillFamilia.classList.add('receta');
+        }
+
+        detalleBox.style.display = 'block';
+        nuevoPrecioInput.focus();
+        setMsg('Anteojo encontrado. Ingresá el nuevo precio y presioná "Actualizar".','ok');
+      }catch(err){
+        console.error(err);
+        setMsg('Error al buscar. Revisá la consola.', 'error');
+      }finally{
+        btnBuscar.disabled = false;
+      }
+    }
+
+    async function actualizarCosto(){
+      if(!anteojoActual){
+        alert('Primero buscá un anteojo.');
+        return;
+      }
+      let nuevoPrecio = nuevoPrecioInput.value.trim();
+      if(!nuevoPrecio){
+        alert('Ingresá el nuevo precio público.');
+        return;
+      }
+
+      // Cambiamos coma por punto por las dudas
+      nuevoPrecio = nuevoPrecio.replace(',','.');
+      if(isNaN(Number(nuevoPrecio))){
+        alert('El nuevo precio no es un número válido.');
+        return;
+      }
+
+      btnActualizar.disabled = true;
+      setMsg('Actualizando costo...', '');
+
+      try{
+        const params = new URLSearchParams({
+          accion: 'actualizarPrecio',
+          numero: String(anteojoActual.numero),
+          nuevoPrecio: String(nuevoPrecio)
+        });
+
+        const res = await fetch(`${API_URL}?${params.toString()}`);
+        const data = await res.json();
+
+        if(!data.ok){
+          setMsg(data.error || 'No se pudo actualizar el costo.', 'error');
+          btnActualizar.disabled = false;
+          return;
+        }
+
+        // Actualizamos campos visibles
+        costoActualInput.value  = data.costo;
+        precioActualInput.value = data.precio;
+
+        setMsg(`Costo actualizado correctamente. Familia: ${data.familia} • Fila: ${data.row}`, 'ok');
+      }catch(err){
+        console.error(err);
+        setMsg('Error al actualizar. Revisá la consola.', 'error');
+      }finally{
+        btnActualizar.disabled = false;
+      }
+    }
+
+    function limpiarTodo(){
+      numeroInput.value = '';
+      resetDetalle();
+      numeroInput.focus();
+    }
+
+    btnBuscar.addEventListener('click', buscarAnteojo);
+    btnActualizar.addEventListener('click', actualizarCosto);
+    btnLimpiar.addEventListener('click', limpiarTodo);
+
+    numeroInput.addEventListener('keydown', e=>{
+      if(e.key === 'Enter') buscarAnteojo();
+    });
+    nuevoPrecioInput.addEventListener('keydown', e=>{
+      if(e.key === 'Enter') actualizarCosto();
+    });
+  </script>
+</body>
+</html>
